@@ -25,4 +25,4 @@ World configuration: Seed -4562913757330550907, Location -203.83 142.01 647.58 1
 ```
 
 ## License
-Rendersnap is currently licensed under the Polyform Shield License 1.0.0.
+Rendersnap is currently licensed under the Star-end License 2.1.0.
