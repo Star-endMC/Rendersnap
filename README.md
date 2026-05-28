@@ -1,20 +1,25 @@
 # Rendersnap
-The mod, in it's name, improves on the current (inadequate) rendering engine, by applying aggressive (but subtle) optimizations to cut down the amount of things to render, without causing incompatibility issues out of the box!
+The mod, in it's name, improves on the current (inadequate) rendering engine, by applying aggressive (but subtle) optimizations to cut down the amount of things to render, without causing incompatibility issues.
 
 ![Fabric compatible](https://cdn.modrinth.com/data/cached_images/513035d1231a86dff137c74e04a5e64633593f10.png)
 
 ## Highlights
 
-- Block face culling
-   - Skips faces buried between matching full solid blocks. Turn it off for model packs or moving-block mods that show missing faces.
-- Behind camera draw optimization
-   - Skips far entities, block entities, and translucent sorting behind the camera.
-- Section occlusion
-   - Uses Minecraft's section visibility graph to skip chunk sections hidden by terrain. Turn it off if chunks look cut open.
+### It's simple!
+
+Only simple (yet useful) optimizations are applied, such as block face culling, behind camera draw skipping, section occlusion, and etc.
+
+### It's modular!
+
+All can be controlled, enabled or disabled, aggressive or conservative, through vanilla settings.
+
+### It's compatible!
+
+Fix, not change, so vanilla renderer features such as vanilla shaders are completely supported.
 
 ## Benchmarks
 
-![Difference in FPS between vanillia and rendersnap](https://cdn.modrinth.com/data/cached_images/9ae214d0598fddf937049788ade1e7df54c660f5.jpeg)
+![Difference in FPS between Vanilla and Rendersnap](https://cdn.modrinth.com/data/cached_images/9ae214d0598fddf937049788ade1e7df54c660f5.jpeg)
 
 ```
 Hardware configuration: Intel I5 1035G1 with Nvidia MX330, 8GB DDR4 RAM, 1TB NVMe ssd. 
@@ -25,4 +30,4 @@ World configuration: Seed -4562913757330550907, Location -203.83 142.01 647.58 1
 ```
 
 ## License
-Rendersnap is currently licensed under the Star-end License 2.1.0.
+Rendersnap is currently licensed under the Star-end License.
