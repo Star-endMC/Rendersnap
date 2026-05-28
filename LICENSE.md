@@ -2,6 +2,8 @@
 
 Version 2.1.2
 
+https://github.com/Star-endMC/Star-end-License/tree/v2.1.2
+
 (c) Star-end - All rights reserved
 
 ## Summary (not legally binding)
