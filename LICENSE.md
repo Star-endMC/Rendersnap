@@ -1,14 +1,12 @@
 # Star-end Software License Agreement (SLA)
 
-Version 2.1.0
-
-https://github.com/Star-endMC/Star-end-License/tree/main
+Version 2.1.2
 
 (c) Star-end - All rights reserved
 
 ## Summary (not legally binding)
 
-If you are a standard player or developer: You can use, share, and modify this software completely free of charge for non-commercial purposes, provided you give proper credit and keep modified versions under this same license.
+If you are a standard player or developer, you can use, share, and modify this software completely free of charge for non-commercial purposes, provided you give proper credit and keep modified versions under this same license.
 
 If you are a business, commercial server host, or monetized network, you must obtain explicit prior written permission from Star-end before using or distributing this software for commercial purposes.
 
@@ -68,7 +66,7 @@ This Agreement applies globally to the maximum extent permitted by applicable la
 
 (7, Material Breach and Termination Failure) Failure to achieve full compliance within seven (7) days of written notice, or any intentional attempt to bypass, strip, or mock the licensing attributes of the Software, constitutes an immediate and uncurable material breach. Upon breach, this Agreement terminates automatically, all rights granted to the violating party are permanently revoked, and Star-end reserves the absolute right to execute immediate platform DMCA takedowns, host-level interventions, and legal enforcement for statutory damages.
 
-# (V) General Provisions and Disclaimers
+## (V) General Provisions and Disclaimers
 
 (8, Disclaimer of Warranties) THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
