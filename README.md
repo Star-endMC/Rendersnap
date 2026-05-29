@@ -1,7 +1,7 @@
 # Rendersnap
 The mod, in it's name, improves on the current (inadequate) rendering engine, by applying aggressive (but subtle) optimizations to cut down the amount of things to render, without causing incompatibility issues.
 
-![Fabric compatible](https://cdn.modrinth.com/data/cached_images/513035d1231a86dff137c74e04a5e64633593f10.png)
+![.](https://cdn.modrinth.com/data/cached_images/f6a97386786796587059baec6a3457ed4e82dae4.png)
 
 ## Highlights
 
