@@ -73,7 +73,6 @@ jar {
 if (tasks.findByName("remapJar") == null) {
 	tasks.register("remapJar") {
 		group = "build"
-		description = "Compatibility alias for Loom builds that only expose jar."
 		dependsOn tasks.named("jar")
 	}
 }
