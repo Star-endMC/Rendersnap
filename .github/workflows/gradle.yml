@@ -38,6 +38,15 @@ jobs:
         chmod +x ./gradlew
         ./gradlew build
 
+    - name: Get Build Artifacts
+      run: |
+        find ./versions/ -path "*/builds/libs/*.jar" -exec cp {} ./bin/ \;
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        path: bin/*.jar
+
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.
     #
