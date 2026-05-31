@@ -1,6 +1,0 @@
-Manifest-Version: 1.0
-Stonecutter-Plugin-Version: 0.9.4
-Stonecutter-Gradle-Version: 9.4.1
-Stonecutter-Node-Project: 26.1.2
-Stonecutter-Node-Version: 26.1.2
-
