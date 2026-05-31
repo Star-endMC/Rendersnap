@@ -7,7 +7,7 @@ The mod, in it's name, improves on the current (inadequate) rendering engine, by
 
 ### It's simple!
 
-Only simple (yet useful) optimizations are applied, such as block face culling, behind camera draw skipping, section occlusion, and etc.
+Only simple (yet useful) optimizations are applied, mostly cutting out things you can't see.
 
 ### It's modular!
 
@@ -16,6 +16,24 @@ All can be controlled, enabled or disabled, aggressive or conservative, through 
 ### It's compatible!
 
 Fix, not change, so vanilla renderer features such as vanilla shaders are completely supported.
+
+## Optimizations
+
+### Multi-render
+
+Renders chunks efficiently by keeping chunk rebuilds on the worker queue instead of forcing nearby rebuilds on the render thread.
+
+### Section occlusion
+
+Uses the section visibility graph to skip rendering terrain hidden behind other terrains.
+
+### Block face culling
+
+Skips rendering faces between full solid blocks
+
+### Distance entity culling
+
+Non-player entities will not be rendered behind the player or beyond the fog.
 
 ## Benchmarks
 
