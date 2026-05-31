@@ -10,8 +10,24 @@ name: Java CI with Gradle
 on:
   push:
     branches: [ "main", "dev" ]
+    paths:
+      - ".github/workflows/gradle.yml"
+      - "**/*.gradle"
+      - "**/*.gradle.kts"
+      - "**/gradle-wrapper.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      - "**/src/**"
   pull_request:
     branches: [ "main", "dev" ]
+    paths:
+      - ".github/workflows/gradle.yml"
+      - "**/*.gradle"
+      - "**/*.gradle.kts"
+      - "**/gradle-wrapper.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      - "**/src/**"
 
 jobs:
   build:
