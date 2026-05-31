@@ -1,0 +1,31 @@
+{
+	"schemaVersion": 1,
+	"id": "rendersnap",
+	"version": "1.1",
+	"name": "Rendersnap",
+	"description": "Mid client-side rendering optimization mod for Minecraft.",
+	"authors": [
+		"StarEnd"
+	],
+	"contact": {
+		"homepage": "",
+		"sources": ""
+	},
+	"license": "Polyform Shield 1.0.0",
+	"icon": "assets/rendersnap/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"rendersnap.star.end.client.RendersnapClient"
+		]
+	},
+	"mixins": [
+		"rendersnap.client.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.6",
+		"minecraft": "~26.1.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
