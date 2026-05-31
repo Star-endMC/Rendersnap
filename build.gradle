@@ -1,0 +1,82 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+	id 'maven-publish'
+}
+
+apply plugin: project.loom_plugin
+
+version = project.mod_version
+group = project.maven_group
+def javaTarget = (project.findProperty("java_version") ?: "25") as int
+def mcRange = project.findProperty("minecraft_dependency") ?: "~${project.minecraft_version}"
+
+repositories {
+}
+
+loom {
+	splitEnvironmentSourceSets()
+
+	mods {
+		"archoptimize" {
+			sourceSet sourceSets.main
+			sourceSet sourceSets.client
+		}
+	}
+
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	if ((project.findProperty("mojang_mappings") ?: "false").toBoolean()) {
+		mappings loom.officialMojangMappings()
+	}
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	clientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	compileOnly "net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7"
+	clientCompileOnly "net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7"
+
+}
+
+tasks.withType(ProcessResources).configureEach {
+	inputs.property "version", project.version
+	inputs.property "minecraft_dependency", mcRange
+	inputs.property "java_version", javaTarget
+
+	filesMatching(["fabric.mod.json", "rendersnap.client.mixins.json"]) {
+		expand(
+				"version": inputs.properties.version,
+				"minecraft_dependency": mcRange,
+				"java_version": javaTarget
+		)
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = javaTarget
+	it.options.compilerArgs += ['-Xlint:deprecation']
+}
+
+java {
+	sourceCompatibility = JavaVersion.toVersion(javaTarget)
+	targetCompatibility = JavaVersion.toVersion(javaTarget)
+}
+
+jar {
+	inputs.property "projectName", project.name
+
+	from(rootProject.file("LICENSE")) {
+		rename { "${it}_${project.name}"}
+	}
+}
+
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+
+	repositories {
+	}
+}

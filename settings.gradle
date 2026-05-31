@@ -1,0 +1,23 @@
+pluginManagement {
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		mavenCentral()
+		gradlePluginPortal()
+	}
+}
+
+plugins {
+	id 'dev.kikugie.stonecutter' version '0.9.4'
+}
+
+rootProject.name = 'archoptimize'
+
+stonecutter {
+	create(getRootProject()) {
+		versions '26.1.2', '26.2-snapshot-8'
+		vcsVersion = '26.1.2'
+	}
+}
