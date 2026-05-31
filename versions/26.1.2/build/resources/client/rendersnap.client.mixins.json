@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "rendersnap.star.end.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "cam.PlrView",
+    "ui.LogoInF3",
+    "cam.Viewhand",
+    "scene.WaterLight",
+    "cam.FogPass",
+    "ui.OptsBtn",
+    "world.ChunkGraph",
+    "world.LightBits",
+    "world.TexLod",
+    "entity.MobRender",
+    "world.BlockFaces",
+    "ui.Wheel",
+    "scene.SkyBits",
+    "scene.RainBits"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
