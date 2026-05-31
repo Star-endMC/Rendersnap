@@ -15,7 +15,7 @@ The latest release can be found [here](https://github.com/Star-endMC/Rendersnap/
 
 Nightly builds contain changes that may not be available in the final release.
 
-It is recommended to get nightly builds from the main branch in the automatic builds, as the main branch is commited with changes that have been tested and verified. It can be found [here](https://github.com/Star-endMC/Rendersnap/actions?query=branch%3Amain).
+It is recommended to get nightly builds from the main branch in the automatic builds, as the main branch is commited with changes that have been tested. It can be found [here](https://github.com/Star-endMC/Rendersnap/actions?query=branch%3Amain).
 
 If you are willing to take the risk, you may get the nightly builds from the dev branch in the automatic builds, which may contain unstable changes. It can be found [here](https://github.com/Star-endMC/Rendersnap/actions?query=branch%3Adev).
 
