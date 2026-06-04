@@ -20,6 +20,7 @@
   "rendersnap.option.entities.tooltip": "Skips non-player entities when their chunk section is not part of Minecraft's visible terrain section.",
   "rendersnap.option.behind_cam": "Behind Cam Draw Optimization",
   "rendersnap.option.behind_cam.tooltip": "Normal skips rendering far entity and translucent work behind you to improve performance. The High setting also skips rendering of terrain sections not visible to the player's view behind the camera.",
+  "rendersnap.option.behind_cam.value": "Behind Cam Draw Optimization: %s",
   "rendersnap.option.behind_cam.0": "Off",
   "rendersnap.option.behind_cam.1": "Default",
   "rendersnap.option.behind_cam.2": "High",
@@ -34,7 +35,7 @@
   "rendersnap.option.fast_launch": "Fast Launch",
   "rendersnap.option.fast_launch.tooltip": "Gives a performance boost during the first few seconds after launching the game. Disable it if you see weird chunk building or visual bugs during game launch.",
   "rendersnap.toast.reload.title": "Restart Recommended",
-  "rendersnap.toast.reload.body":  "Rendersnap settings have changed. For best performance, please restart the game or reload chunks by pressing F3 + A.",
+  "rendersnap.toast.reload.body":  "Rendersnap settings have changed. Restart the game for a successful reload.",
 
   "key.rendersnap.zoom": "Zoom",
   "key.categories.rendersnap": "Rendersnap",
