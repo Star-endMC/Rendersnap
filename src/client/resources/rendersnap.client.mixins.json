@@ -5,7 +5,6 @@
   "compatibilityLevel": "JAVA_${java_version}",
   "client": [
     "cam.PlrView",
-    "ui.LogoInF3",
     "cam.Viewhand",
     "scene.WaterLight",
     "cam.FogPass",
