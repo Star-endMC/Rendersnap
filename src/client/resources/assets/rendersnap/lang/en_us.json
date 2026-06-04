@@ -1,7 +1,7 @@
 {
   "rendersnap.screen.video": "Video Settings",
   "rendersnap.screen.optimization": "Performance",
-  "rendersnap.screen.effects": "Visuals",
+  "rendersnap.screen.effects": "Visual Quality",
   "rendersnap.group.snap": "Rendersnap Settings",
 
   "rendersnap.option.fps": "FPS Counter",
@@ -31,10 +31,6 @@
   "rendersnap.option.fluid.tooltip": "Samples nearby light for water and lava during chunk builds. Disable it if fluids look wrong with your pack or shader.",
   "rendersnap.option.weather": "Hide Weather",
   "rendersnap.option.weather.tooltip": "Stops rain, snow, and weather particles from drawing.",
-  "rendersnap.option.sun": "Hide Sun",
-  "rendersnap.option.sun.tooltip": "Stops the sun and sunrise or sunset glow from drawing.",
-  "rendersnap.option.moon": "Hide Moon",
-  "rendersnap.option.moon.tooltip": "Stops the moon from drawing.",
   "rendersnap.option.fast_launch": "Fast Launch",
   "rendersnap.option.fast_launch.tooltip": "Gives a performance boost during the first few seconds after launching the game. Disable it if you see weird chunk building or visual bugs during game launch.",
   "rendersnap.toast.reload.title": "Restart Recommended",
