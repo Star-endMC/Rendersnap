@@ -16,7 +16,6 @@
     "entity.MobRender",
     "world.BlockFaces",
     "ui.Wheel",
-    "scene.SkyBits",
     "scene.RainBits"
   ],
   "injectors": {
