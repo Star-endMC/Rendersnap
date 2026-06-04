@@ -74,8 +74,6 @@ public final class RendersnapClient implements ClientModInitializer {
         Cuts.setBehindCamMode(Opts.behindCamMode);
         Cuts.setLightingChunkTrim(Opts.lightingChunkTrim);
         Cuts.setHideWeather(Opts.hideWeather);
-        Cuts.setHideSun(Opts.hideSun);
-        Cuts.setHideMoon(Opts.hideMoon);
         Cuts.setFluidOptimizer(Opts.fluidOptimizer);
     }
 }
