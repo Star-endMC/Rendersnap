@@ -35,8 +35,6 @@ public final class Opts {
     public static final boolean DEFAULT_LIGHTING_CHUNK_TRIM = true;
     public static final boolean DEFAULT_FAST_LAUNCH = true;
     public static final boolean DEFAULT_HIDE_WEATHER = false;
-    public static final boolean DEFAULT_HIDE_SUN = false;
-    public static final boolean DEFAULT_HIDE_MOON = false;
     public static final boolean DEFAULT_FLUID_OPTIMIZER = true;
     public static final boolean DEFAULT_MULTI_RENDER = false;
 
@@ -55,8 +53,6 @@ public final class Opts {
 
     public static boolean fastLaunch = DEFAULT_FAST_LAUNCH;
     public static boolean hideWeather = DEFAULT_HIDE_WEATHER;
-    public static boolean hideSun = DEFAULT_HIDE_SUN;
-    public static boolean hideMoon = DEFAULT_HIDE_MOON;
     public static boolean fluidOptimizer = DEFAULT_FLUID_OPTIMIZER;
     public static boolean multiRender = DEFAULT_MULTI_RENDER;
     public static int chunkUpdateMode = -1;
@@ -109,8 +105,6 @@ public final class Opts {
 
         fastLaunch = bool(p, "fastLaunch", fastLaunch);
         hideWeather = bool(p, "hideWeather", hideWeather);
-        hideSun = bool(p, "hideSun", hideSun);
-        hideMoon = bool(p, "hideMoon", hideMoon);
         fluidOptimizer = bool(p, "fluidOptimizer", fluidOptimizer);
         multiRender = bool(p, "multiRender", multiRender);
         chunkUpdateMode = Mth.clamp(intV(p, "chunkUpdateMode", chunkUpdateMode), -1, 2);
@@ -152,8 +146,6 @@ public final class Opts {
         p.setProperty("fastLaunch", String.valueOf(fastLaunch));
 
         p.setProperty("hideWeather", String.valueOf(hideWeather));
-        p.setProperty("hideSun", String.valueOf(hideSun));
-        p.setProperty("hideMoon", String.valueOf(hideMoon));
         p.setProperty("fluidOptimizer", String.valueOf(fluidOptimizer));
         p.setProperty("multiRender", String.valueOf(multiRender));
         p.setProperty("chunkUpdateMode", String.valueOf(chunkUpdateMode));
@@ -175,8 +167,6 @@ public final class Opts {
         fastLaunch = DEFAULT_FAST_LAUNCH;
 
         hideWeather = DEFAULT_HIDE_WEATHER;
-        hideSun = DEFAULT_HIDE_SUN;
-        hideMoon = DEFAULT_HIDE_MOON;
         fluidOptimizer = DEFAULT_FLUID_OPTIMIZER;
         multiRender = DEFAULT_MULTI_RENDER;
         chunkUpdateMode = -1;
