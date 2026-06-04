@@ -124,16 +124,6 @@ public final class SnapPage extends OptionsSubScreen {
             Cuts.setHideWeather(on);
             Opts.save();
         }));
-        this.list.addBig(bool("rendersnap.option.sun", Opts.hideSun, on -> {
-            Opts.hideSun = on;
-            Cuts.setHideSun(on);
-            Opts.save();
-        }));
-        this.list.addBig(bool("rendersnap.option.moon", Opts.hideMoon, on -> {
-            Opts.hideMoon = on;
-            Cuts.setHideMoon(on);
-            Opts.save();
-        }));
     }
 
     private OptionInstance<Integer> zoomEase() {
