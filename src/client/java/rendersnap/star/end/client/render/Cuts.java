@@ -42,8 +42,6 @@ public final class Cuts {
     private static int behindCamMode;
     private static boolean lightingChunkTrim;
     private static boolean hideWeather;
-    private static boolean hideSun;
-    private static boolean hideMoon;
     private static boolean fluidOptimizer;
 
     private static double cameraX;
@@ -109,22 +107,6 @@ public final class Cuts {
 
     public static boolean shouldHideWeather() {
         return hideWeather;
-    }
-
-    public static void setHideSun(boolean on) {
-        hideSun = on;
-    }
-
-    public static boolean shouldHideSun() {
-        return hideSun;
-    }
-
-    public static void setHideMoon(boolean on) {
-        hideMoon = on;
-    }
-
-    public static boolean shouldHideMoon() {
-        return hideMoon;
     }
 
     public static void setFluidOptimizer(boolean on) {

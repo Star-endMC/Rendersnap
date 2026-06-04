@@ -76,8 +76,10 @@ public final class VideoPage extends OptionsSubScreen {
         });
 
         this.list.addHeader(SNAP);
-        this.list.addSmall(pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION), null);
-        this.list.addSmall(pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS), null);
+        this.list.addSmall(
+                pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION),
+                pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS)
+        );
         //?} else {
         /*this.list.addBig(this.fullscreen());
         this.list.addSmall(new OptionInstance[]{
@@ -93,8 +95,10 @@ public final class VideoPage extends OptionsSubScreen {
         this.list.addSmall(new OptionInstance[]{
                 this.options.showAutosaveIndicator(), this.options.attackIndicator()
         });
-        this.list.addSmall(pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION), null);
-        this.list.addSmall(pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS), null);
+        this.list.addSmall(
+                pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION),
+                pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS)
+        );
         *///?}
     }
 
@@ -191,7 +195,7 @@ public final class VideoPage extends OptionsSubScreen {
                         Component.translatable(key),
                         button -> open(new SnapPage(this, this.minecraft, this.options, tab))
                 )
-                .bounds(0, 0, 310, 20)
+                .bounds(0, 0, 150, 20)
                 .build();
     }
 
