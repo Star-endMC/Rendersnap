@@ -13,7 +13,6 @@ import rendersnap.star.end.client.cfg.Opts;
 import rendersnap.star.end.client.render.Cuts;
 import rendersnap.star.end.client.render.zoom.Zoom;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 public final class SnapPage extends OptionsSubScreen {
@@ -91,8 +90,9 @@ public final class SnapPage extends OptionsSubScreen {
         return new OptionInstance<>(
                 "rendersnap.option.behind_cam",
                 tip("rendersnap.option.behind_cam.tooltip"),
-                (caption, mode) -> Component.translatable("rendersnap.option.behind_cam." + mode),
-                new OptionInstance.Enum<>(List.of(Opts.BEHIND_CAM_OFF, Opts.BEHIND_CAM_NORMAL, Opts.BEHIND_CAM_HIGH), Codec.INT),
+                (caption, mode) -> Component.translatable("rendersnap.option.behind_cam.value",
+                        Component.translatable("rendersnap.option.behind_cam." + mode)),
+                new OptionInstance.IntRange(Opts.BEHIND_CAM_OFF, Opts.BEHIND_CAM_HIGH),
                 Opts.behindCamMode,
                 mode -> {
                     Opts.behindCamMode = mode;
