@@ -5,7 +5,8 @@
 	"name": "Rendersnap",
 	"description": "Mid client-side rendering optimization mod for Minecraft.",
 	"authors": [
-		"StarEnd"
+		"StarEnd",
+		"Admany"
 	],
 	"contact": {
 		"license": "StarEnd License 2.1.3",
