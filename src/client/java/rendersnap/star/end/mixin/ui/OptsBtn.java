@@ -30,7 +30,7 @@ public abstract class OptsBtn extends Screen {
 
     @Inject(method = "openScreenButton", at = @At("HEAD"), cancellable = true)
     private void videoButton(Component label, Supplier<Screen> vanilla, CallbackInfoReturnable<Button> cir) {
-        if (label != VIDEO) return;
+        if (!VIDEO.equals(label)) return;
 
         cir.setReturnValue(Button.builder(label, btn -> {
             Minecraft mc = this.minecraft;

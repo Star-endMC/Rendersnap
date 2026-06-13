@@ -11,7 +11,13 @@ def javaTarget = (project.findProperty("java_version") ?: "25") as int
 def mcRange = project.findProperty("minecraft_dependency") ?: "~${project.minecraft_version}"
 
 repositories {
+	flatDir {
+		dirs rootProject.file('libs')
+	}
 }
+
+def quantifiedJars = fileTree(dir: rootProject.file('libs'), include: ['quantified*.jar']).files
+def quantifiedJar = quantifiedJars.isEmpty() ? null : quantifiedJars.sort { it.name }.last()
 
 loom {
 	splitEnvironmentSourceSets()
@@ -33,6 +39,10 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	clientImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	if (quantifiedJar != null) {
+		compileOnly files(quantifiedJar)
+		clientCompileOnly files(quantifiedJar)
+	}
 	compileOnly "net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7"
 	clientCompileOnly "net.fabricmc:sponge-mixin:0.17.2+mixin.0.8.7"
 

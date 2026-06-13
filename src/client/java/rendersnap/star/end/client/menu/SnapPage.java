@@ -78,6 +78,18 @@ public final class SnapPage extends OptionsSubScreen {
             Cuts.setTextureLod(on);
             Opts.save();
         }));
+        this.list.addBig(bool("rendersnap.option.chunk_shade_trim", Opts.chunkShadeTrim, on -> {
+            Opts.chunkShadeTrim = on;
+            Cuts.setChunkShadeTrim(on);
+            staleChunks();
+            Opts.save();
+        }));
+        this.list.addBig(bool("rendersnap.option.far_layer_trim", Opts.farLayerTrim, on -> {
+            Opts.farLayerTrim = on;
+            Cuts.setFarLayerTrim(on);
+            staleChunks();
+            Opts.save();
+        }));
         this.list.addBig(bool("rendersnap.option.light_cache", Opts.lightingChunkTrim, on -> {
             Opts.lightingChunkTrim = on;
             Cuts.setLightingChunkTrim(on);

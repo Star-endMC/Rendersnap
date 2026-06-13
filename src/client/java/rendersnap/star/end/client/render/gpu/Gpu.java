@@ -10,9 +10,9 @@ public final class Gpu {
     private Gpu() {}
 
     public static void reportActiveAdapter() {
-        String vendor = glString(GL11.GL_VENDOR);
-        String renderer = glString(GL11.GL_RENDERER);
-        String version = glString(GL11.GL_VERSION);
+        String vendor = vendor();
+        String renderer = renderer();
+        String version = version();
         String gpu = (vendor + " " + renderer).toLowerCase(Locale.ROOT);
 
         if (vendor.isBlank() && renderer.isBlank()) {
@@ -25,7 +25,7 @@ public final class Gpu {
                 || gpu.contains("software")
                 || gpu.contains("microsoft basic render")
                 || gpu.contains("mesa offscreen")) {
-            Rendersnap.LOGGER.warn("Minecraft is using a software renderer: {} {}. Set javaw.exe or your launcher to the high-performance GPU.", vendor, renderer);
+            Rendersnap.LOGGER.warn("Minecraft is using a software renderer: {} {}. Set javaw.exe to the high-performance GPU.", vendor, renderer);
             return;
         }
 
@@ -35,11 +35,23 @@ public final class Gpu {
                 || gpu.contains("vega")
                 || gpu.contains("radeon graphics")
                 || gpu.contains("amd radeon(tm) graphics")) {
-            Rendersnap.LOGGER.warn("Minecraft looks like it's on integrated graphics: {} {}. Pick the dedicated GPU for javaw.exe or your launcher.", vendor, renderer);
+            Rendersnap.LOGGER.warn("Minecraft looks like it is on integrated graphics: {} {}. Pick the dedicated GPU for javaw.exe.", vendor, renderer);
             return;
         }
 
         Rendersnap.LOGGER.info("Active graphics adapter: {} {} ({})", vendor, renderer, version);
+    }
+
+    public static String vendor() {
+        return glString(GL11.GL_VENDOR);
+    }
+
+    public static String renderer() {
+        return glString(GL11.GL_RENDERER);
+    }
+
+    public static String version() {
+        return glString(GL11.GL_VERSION);
     }
 
     private static String glString(int name) {

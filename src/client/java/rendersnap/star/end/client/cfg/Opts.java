@@ -25,6 +25,8 @@ public final class Opts {
     public static final int DEFAULT_ZOOM_TRANSITION = 2;
     public static final boolean DEFAULT_BLOCK_FACE_CULLING = true;
     public static final boolean DEFAULT_TEXTURE_LOD = false;
+    public static final boolean DEFAULT_CHUNK_SHADE_TRIM = true;
+    public static final boolean DEFAULT_FAR_LAYER_TRIM = false;
     public static final boolean DEFAULT_ENTITY_CULLING = true;
     public static final boolean DEFAULT_OCCLUSION_CULLING = true;
     public static final boolean DEFAULT_FOG_OCCLUSION = true;
@@ -45,6 +47,8 @@ public final class Opts {
 
     public static boolean blockFaceCulling = DEFAULT_BLOCK_FACE_CULLING;
     public static boolean textureLod = DEFAULT_TEXTURE_LOD;
+    public static boolean chunkShadeTrim = DEFAULT_CHUNK_SHADE_TRIM;
+    public static boolean farLayerTrim = DEFAULT_FAR_LAYER_TRIM;
     public static boolean entityCulling = DEFAULT_ENTITY_CULLING;
     public static boolean occlusionCulling = DEFAULT_OCCLUSION_CULLING;
     public static boolean fogOcclusion = DEFAULT_FOG_OCCLUSION;
@@ -96,6 +100,8 @@ public final class Opts {
 
         blockFaceCulling = bool(p, "blockFaceCulling", blockFaceCulling);
         textureLod = bool(p, "textureLod", textureLod);
+        chunkShadeTrim = bool(p, "chunkShadeTrim", chunkShadeTrim);
+        farLayerTrim = bool(p, "farLayerTrim", farLayerTrim);
         entityCulling = bool(p, "entityCulling", entityCulling);
         occlusionCulling = bool(p, "occlusionCulling", occlusionCulling);
         fogOcclusion = bool(p, "fogOcclusion", fogOcclusion);
@@ -138,6 +144,8 @@ public final class Opts {
 
         p.setProperty("blockFaceCulling", String.valueOf(blockFaceCulling));
         p.setProperty("textureLod", String.valueOf(textureLod));
+        p.setProperty("chunkShadeTrim", String.valueOf(chunkShadeTrim));
+        p.setProperty("farLayerTrim", String.valueOf(farLayerTrim));
         p.setProperty("entityCulling", String.valueOf(entityCulling));
         p.setProperty("occlusionCulling", String.valueOf(occlusionCulling));
         p.setProperty("fogOcclusion", String.valueOf(fogOcclusion));
@@ -159,6 +167,8 @@ public final class Opts {
 
         blockFaceCulling = DEFAULT_BLOCK_FACE_CULLING;
         textureLod = DEFAULT_TEXTURE_LOD;
+        chunkShadeTrim = DEFAULT_CHUNK_SHADE_TRIM;
+        farLayerTrim = DEFAULT_FAR_LAYER_TRIM;
         entityCulling = DEFAULT_ENTITY_CULLING;
         occlusionCulling = DEFAULT_OCCLUSION_CULLING;
         fogOcclusion = DEFAULT_FOG_OCCLUSION;
