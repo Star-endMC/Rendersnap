@@ -22,6 +22,7 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -29,12 +30,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.joml.Matrix4fc;
 import org.joml.Vector4f;
 import rendersnap.star.end.client.PreparedChunkCache;
+import rendersnap.star.end.client.McCompat;
 
 @Mixin(LevelRenderer.class)
 public abstract class ChunkGraph {
+    @Unique
+    private static final int RENDERSNAP_FALSE_EMPTY_REPAIR_LIMIT = 8;
 
     @Shadow @Final
     private ObjectArrayList<SectionRenderDispatcher.RenderSection> visibleSections;
+    @Shadow
+    private SectionRenderDispatcher sectionRenderDispatcher;
 
     private BlockPos rendersnap$sectionOrigin;
     private int rendersnap$vanillaVisibleSections;
@@ -56,6 +62,7 @@ public abstract class ChunkGraph {
         }
     }
 
+    //? if >=26.2 {
     @Inject(method = "render", at = @At("HEAD"), require = 0)
     private void rendersnap$updateCamera26(
             GraphicsResourceAllocator allocator,
@@ -70,6 +77,7 @@ public abstract class ChunkGraph {
     ) {
         Cuts.updateCamera(cameraState.pos, cameraState.orientation);
     }
+    //?}
 
     @org.spongepowered.asm.mixin.injection.Redirect(
             method = "prepareChunkRenders",
@@ -109,7 +117,7 @@ public abstract class ChunkGraph {
     private void rendersnap$usePreparedCache(Matrix4fc frustumMatrix, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
         cutVisibleSections();
         Cuts.publishVisibleCounts(this.rendersnap$vanillaVisibleSections, this.rendersnap$trimmedVisibleSections, this.rendersnap$finalVisibleSections);
-        ChunkSectionsToRender prepared = PreparedChunkCache.get(this.visibleSections);
+        ChunkSectionsToRender prepared = PreparedChunkCache.get(this.visibleSections, frustumMatrix, this.sectionRenderDispatcher);
         if (prepared != null) {
             cir.setReturnValue(prepared);
         }
@@ -118,10 +126,22 @@ public abstract class ChunkGraph {
     @Inject(method = "prepareChunkRenders", at = @At("RETURN"), cancellable = true)
     private void rendersnap$storePreparedCache(Matrix4fc frustumMatrix, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
         ChunkSectionsToRender prepared = Cuts.aggregateCutoutDraws(cir.getReturnValue());
-        PreparedChunkCache.put(this.visibleSections, prepared);
+        PreparedChunkCache.put(this.visibleSections, prepared, this.sectionRenderDispatcher);
         if (prepared != cir.getReturnValue()) {
             cir.setReturnValue(prepared);
         }
+    }
+
+    @Inject(method = "invalidateCompiledGeometry", at = @At("HEAD"))
+    private void rendersnap$clearPreparedChunksOnInvalidate(CallbackInfo ci) {
+        PreparedChunkCache.clear();
+        Cuts.clearWorldState();
+    }
+
+    @Inject(method = "resetLevelRenderData", at = @At("HEAD"))
+    private void rendersnap$clearPreparedChunksOnReset(CallbackInfo ci) {
+        PreparedChunkCache.clear();
+        Cuts.clearWorldState();
     }
 
     private void cutVisibleSections() {
@@ -138,7 +158,39 @@ public abstract class ChunkGraph {
         }
 
         this.rendersnap$finalVisibleSections = this.visibleSections.size();
+        rendersnap$repairFalseEmptySections();
         Cuts.seeSections(this.visibleSections);
         PreparedChunkCache.captureVisibleSections(this.visibleSections);
     }
+
+    @Unique
+    private void rendersnap$repairFalseEmptySections() {
+        var level = McCompat.level((LevelRenderer)(Object)this);
+        if (level == null) {
+            Cuts.recordFalseEmptySectionLevelMiss();
+            return;
+        }
+        int repaired = 0;
+        for (int i = 0; i < this.visibleSections.size(); i++) {
+            SectionRenderDispatcher.RenderSection section = this.visibleSections.get(i);
+            if (McCompat.sectionDirty(section) || McCompat.sectionUncompiled(section)) continue;
+            SectionMesh mesh = section.getSectionMesh();
+            if (mesh.hasRenderableLayers() || section.hasTranslucentGeometry()) continue;
+            Cuts.recordFalseEmptySectionCandidate();
+            boolean falseEmpty = McCompat.sectionHasNonAir(level, section.getRenderOrigin());
+            Cuts.recordFalseEmptySectionCheck(falseEmpty);
+            if (!falseEmpty) continue;
+            McCompat.sectionReset(section);
+            McCompat.sectionSetWasPreviouslyEmpty(section, false);
+            McCompat.sectionSetDirty(section, false);
+            McCompat.sectionSetDirty(section, true);
+            Cuts.recordFalseEmptySectionReset();
+            repaired++;
+            if (repaired >= RENDERSNAP_FALSE_EMPTY_REPAIR_LIMIT) break;
+        }
+        if (repaired > 0) {
+            PreparedChunkCache.clear();
+        }
+    }
+    //?}
 }

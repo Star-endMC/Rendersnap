@@ -273,6 +273,8 @@ public final class RenderReport {
         int missingNeighbors = 0;
         int translucent = 0;
         int renderable = 0;
+        int zeroDrawSections = 0;
+        int zeroDrawSectionsWithTerrain = 0;
         int blockEntitySections = 0;
         int totalBlockEntities = 0;
         int nodeMissing = 0;
@@ -288,6 +290,7 @@ public final class RenderReport {
         ArrayList<SectionPressure>[] topSections = new ArrayList[ChunkSectionLayer.values().length];
         for (int i = 0; i < topSections.length; i++) topSections[i] = new ArrayList<>();
         List<String> anomalies = new ArrayList<>();
+        List<String> zeroDrawSamples = new ArrayList<>();
         SectionOcclusionGraph graph = McCompat.sectionOcclusionGraph(renderer);
 
         for (int i = 0; i < sections.size(); i++) {
@@ -312,6 +315,7 @@ public final class RenderReport {
 
             SectionMesh mesh = section.getSectionMesh();
             if (mesh.hasRenderableLayers()) renderable++;
+            int liveDraws = 0;
             int blockEntities = mesh.getRenderableBlockEntities().size();
             totalBlockEntities += blockEntities;
             if (blockEntities > 0) blockEntitySections++;
@@ -326,11 +330,34 @@ public final class RenderReport {
             for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
                 SectionMesh.SectionDraw draw = mesh.getSectionDraw(layer);
                 if (draw == null) continue;
+                liveDraws++;
                 int idx = layer.ordinal();
                 layerSections[idx]++;
                 layerIndices[idx] += draw.indexCount();
                 if (draw.hasCustomIndexBuffer()) layerCustomIndex[idx]++;
                 pushTopSection(topSections[idx], new SectionPressure(layer, origin, dist, draw.indexCount(), draw.hasCustomIndexBuffer()));
+            }
+
+            if (liveDraws == 0) {
+                zeroDrawSections++;
+                if (zeroDrawSamples.size() < 80) {
+                    zeroDrawSamples.add(
+                            origin.getX() + "," + origin.getY() + "," + origin.getZ()
+                                    + " dist=" + fmt(dist)
+                                    + " dirty=" + dirtySection
+                                    + " dirtyPlayer=" + dirtyPlayerSection
+                                    + " neighbors=" + hasAllNeighbors
+                                    + " visibility=" + fmt(section.getVisibility(now))
+                                    + " hasRenderableLayers=" + mesh.hasRenderableLayers()
+                                    + " sampledTerrain=" + McCompat.sectionHasNonAir(mc.level, origin)
+                                    + " translucent=" + section.hasTranslucentGeometry()
+                                    + " blockEntities=" + blockEntities
+                                    + " nodeStep=" + (node == null ? "null" : node.step)
+                    );
+                }
+                if (McCompat.sectionHasNonAir(mc.level, origin)) {
+                    zeroDrawSectionsWithTerrain++;
+                }
             }
 
             if (anomalies.size() < 80 && (dirtySection || !hasAllNeighbors || blockEntities > 0 || section.hasTranslucentGeometry())) {
@@ -354,6 +381,8 @@ public final class RenderReport {
         line(out, "missingNeighbors", missingNeighbors);
         line(out, "translucent", translucent);
         line(out, "renderableLayers", renderable);
+        line(out, "zeroDrawSections", zeroDrawSections);
+        line(out, "zeroDrawSectionsWithTerrain", zeroDrawSectionsWithTerrain);
         line(out, "blockEntitySections", blockEntitySections);
         line(out, "totalBlockEntities", totalBlockEntities);
         line(out, "occlusionNodeMissing", nodeMissing);
@@ -383,6 +412,11 @@ public final class RenderReport {
         out.append('\n').append("[visibleSectionSample]\n");
         for (String anomaly : anomalies) {
             out.append(anomaly).append('\n');
+        }
+
+        out.append('\n').append("[zeroDrawVisibleSections]\n");
+        for (String sample : zeroDrawSamples) {
+            out.append(sample).append('\n');
         }
 
         out.append('\n').append("[heaviestSectionDraws]\n");
@@ -535,6 +569,11 @@ public final class RenderReport {
         long cutoutAggPasses = readStaticCount(Cuts.class, "cutoutAggPasses");
         long cutoutAggListsBefore = readStaticCount(Cuts.class, "cutoutAggListsBefore");
         long cutoutAggListsAfter = readStaticCount(Cuts.class, "cutoutAggListsAfter");
+        long falseEmptyLevelMisses = readStaticCount(Cuts.class, "falseEmptySectionLevelMisses");
+        long falseEmptyCandidates = readStaticCount(Cuts.class, "falseEmptySectionCandidates");
+        long falseEmptyChecks = readStaticCount(Cuts.class, "falseEmptySectionChecks");
+        long falseEmptyRepairs = readStaticCount(Cuts.class, "falseEmptySectionRepairs");
+        long falseEmptyResets = readStaticCount(Cuts.class, "falseEmptySectionResets");
 
         line(out, "entityCull.checks", entityChecks);
         line(out, "entityCull.skips", entitySkips);
@@ -563,6 +602,11 @@ public final class RenderReport {
         line(out, "cutoutAgg.passes", cutoutAggPasses);
         line(out, "cutoutAgg.listsBefore", cutoutAggListsBefore);
         line(out, "cutoutAgg.listsAfter", cutoutAggListsAfter);
+        line(out, "falseEmptySection.levelMisses", falseEmptyLevelMisses);
+        line(out, "falseEmptySection.candidates", falseEmptyCandidates);
+        line(out, "falseEmptySection.checks", falseEmptyChecks);
+        line(out, "falseEmptySection.repairs", falseEmptyRepairs);
+        line(out, "falseEmptySection.resets", falseEmptyResets);
         line(out, "chunkAo.skipRate", percent(aoSkips, aoChecks));
         line(out, "layerTrim.skipRate", percent(layerSkips, layerChecks));
         line(out, "terrainCull.skipRate", percent(terrainSkips, terrainChecks));

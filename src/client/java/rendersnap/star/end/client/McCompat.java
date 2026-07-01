@@ -3,11 +3,14 @@ package rendersnap.star.end.client;
 import com.mojang.blaze3d.platform.Monitor;
 import com.mojang.blaze3d.platform.VideoMode;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.SectionOcclusionGraph;
+import net.minecraft.client.renderer.chunk.CompiledSectionMesh;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
+import net.minecraft.core.BlockPos;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -86,6 +89,10 @@ public final class McCompat {
         return !(value instanceof Boolean flag) || flag;
     }
 
+    public static boolean sectionUncompiled(SectionRenderDispatcher.RenderSection section) {
+        return section != null && section.getSectionMesh() == CompiledSectionMesh.UNCOMPILED;
+    }
+
     public static void sectionCompileAsync(SectionRenderDispatcher.RenderSection section, SectionRenderDispatcher dispatcher, Object cache) {
         if (invoke(section, "compileAsync", cache)) return;
         if (invoke(section, "rebuildSectionAsync", cache)) return;
@@ -104,6 +111,14 @@ public final class McCompat {
 
     public static void sectionSetNotDirty(SectionRenderDispatcher.RenderSection section) {
         invoke(section, "setNotDirty");
+    }
+
+    public static void sectionReset(SectionRenderDispatcher.RenderSection section) {
+        invoke(section, "reset");
+    }
+
+    public static void sectionSetWasPreviouslyEmpty(SectionRenderDispatcher.RenderSection section, boolean empty) {
+        invoke(section, "setWasPreviouslyEmpty", empty);
     }
 
     @SuppressWarnings("unchecked")
@@ -133,6 +148,17 @@ public final class McCompat {
         return value instanceof SectionOcclusionGraph graph ? graph : null;
     }
 
+    public static ClientLevel level(LevelRenderer renderer) {
+        Object value = call(renderer, "getLevel");
+        if (value instanceof ClientLevel level) return level;
+        value = call(renderer, "level");
+        if (value instanceof ClientLevel level) return level;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc != null && mc.level != null) return mc.level;
+        value = field(renderer, "level");
+        return value instanceof ClientLevel level ? level : null;
+    }
+
     public static Object cloudRenderer(LevelRenderer renderer) {
         Object value = call(renderer, "getCloudRenderer");
         return value != null ? value : call(renderer, "cloudRenderer");
@@ -150,6 +176,20 @@ public final class McCompat {
         if (mc == null || mc.levelRenderer == null) return;
         if (invoke(mc.levelRenderer, "allChanged")) return;
         invoke(mc.levelRenderer, "resetSampler");
+    }
+
+    public static boolean sectionHasNonAir(ClientLevel level, BlockPos origin) {
+        if (level == null || origin == null) return false;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int y = 0; y < 16; y += 2) {
+            for (int z = 0; z < 16; z += 2) {
+                for (int x = 0; x < 16; x += 2) {
+                    pos.set(origin.getX() + x, origin.getY() + y, origin.getZ() + z);
+                    if (!level.getBlockState(pos).isAir()) return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean invoke(Object target, String name, Object... args) {
@@ -181,12 +221,17 @@ public final class McCompat {
 
     private static Object field(Object target, String name) {
         if (target == null) return null;
-        try {
-            Field field = target.getClass().getField(name);
-            return field.get(target);
-        } catch (ReflectiveOperationException ignored) {
-            return null;
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                Field field = type.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (ReflectiveOperationException ignored) {
+                type = type.getSuperclass();
+            }
         }
+        return null;
     }
 
     private static boolean fits(Class<?> type, Object arg) {

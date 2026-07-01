@@ -5,11 +5,7 @@ import rendersnap.star.end.client.render.Cuts;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.WeatherEffectRenderer;
-//? if >=26.2 {
 import net.minecraft.client.renderer.state.level.WeatherRenderState;
-//?} else {
-/*import net.minecraft.client.renderer.state.WeatherRenderState;
-*///?}
 import net.minecraft.server.level.ParticleStatus;
 import net.minecraft.world.phys.Vec3;
 //?} else {

@@ -39,16 +39,6 @@ public abstract class ChunkBudgetMixin {
             require = 0
     )
     private void rendersnap$budgetSyncCompile26(SectionRenderDispatcher.RenderSection section, RenderSectionRegion cache) {
-        boolean deferred = ChunkBudget.shouldDefer(
-                this.sectionRenderDispatcher.getCompileQueueSize(),
-                false,
-                section.getRenderOrigin()
-        );
-        if (deferred) {
-            this.rendersnap$deferredRebuilds.add(section);
-            return;
-        }
-        this.rendersnap$deferredRebuilds.remove(section);
         McCompat.sectionCompileSync(section, this.sectionRenderDispatcher, cache);
     }
     
@@ -77,16 +67,6 @@ public abstract class ChunkBudgetMixin {
             require = 0
     )
     private void rendersnap$budgetAsyncCompile26(SectionRenderDispatcher.RenderSection section, RenderSectionRegion cache) {
-        boolean deferred = ChunkBudget.shouldDefer(
-                this.sectionRenderDispatcher.getCompileQueueSize(),
-                false,
-                section.getRenderOrigin()
-        );
-        if (deferred) {
-            this.rendersnap$deferredRebuilds.add(section);
-            return;
-        }
-        this.rendersnap$deferredRebuilds.remove(section);
         McCompat.sectionCompileAsync(section, this.sectionRenderDispatcher, cache);
     }
 

@@ -153,6 +153,11 @@ public final class Cuts {
     private static final LongAdder cutoutAggPasses = new LongAdder();
     private static final LongAdder cutoutAggListsBefore = new LongAdder();
     private static final LongAdder cutoutAggListsAfter = new LongAdder();
+    private static final LongAdder falseEmptySectionLevelMisses = new LongAdder();
+    private static final LongAdder falseEmptySectionCandidates = new LongAdder();
+    private static final LongAdder falseEmptySectionChecks = new LongAdder();
+    private static final LongAdder falseEmptySectionRepairs = new LongAdder();
+    private static final LongAdder falseEmptySectionResets = new LongAdder();
 
     private Cuts() {
         sectionLayerCutoutCache.defaultReturnValue((byte)-1);
@@ -333,6 +338,23 @@ public final class Cuts {
         vanillaVisibleSections = Math.max(0, vanillaVisible);
         trimmedVisibleSections = Math.max(0, trimmedVisible);
         finalVisibleSections = Math.max(0, finalVisible);
+    }
+
+    public static void recordFalseEmptySectionCheck(boolean repaired) {
+        falseEmptySectionChecks.increment();
+        if (repaired) falseEmptySectionRepairs.increment();
+    }
+
+    public static void recordFalseEmptySectionReset() {
+        falseEmptySectionResets.increment();
+    }
+
+    public static void recordFalseEmptySectionLevelMiss() {
+        falseEmptySectionLevelMisses.increment();
+    }
+
+    public static void recordFalseEmptySectionCandidate() {
+        falseEmptySectionCandidates.increment();
     }
 
     public static void tickWorld(Minecraft mc) {
@@ -1075,6 +1097,11 @@ public final class Cuts {
         out.append("cutoutAggPasses=").append(cutoutAggPasses.sum()).append('\n');
         out.append("cutoutAggListsBefore=").append(cutoutAggListsBefore.sum()).append('\n');
         out.append("cutoutAggListsAfter=").append(cutoutAggListsAfter.sum()).append('\n');
+        out.append("falseEmptySectionLevelMisses=").append(falseEmptySectionLevelMisses.sum()).append('\n');
+        out.append("falseEmptySectionCandidates=").append(falseEmptySectionCandidates.sum()).append('\n');
+        out.append("falseEmptySectionChecks=").append(falseEmptySectionChecks.sum()).append('\n');
+        out.append("falseEmptySectionRepairs=").append(falseEmptySectionRepairs.sum()).append('\n');
+        out.append("falseEmptySectionResets=").append(falseEmptySectionResets.sum()).append('\n');
     }
 
     private static int dominantFace(float nx, float ny, float nz) {
