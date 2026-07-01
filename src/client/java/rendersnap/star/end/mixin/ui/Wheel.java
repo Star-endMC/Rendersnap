@@ -1,6 +1,7 @@
 package rendersnap.star.end.mixin.ui;
 
 import rendersnap.star.end.client.render.zoom.Zoom;
+import rendersnap.star.end.client.McCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import org.spongepowered.asm.mixin.Final;
@@ -24,10 +25,7 @@ public abstract class Wheel {
         //?} else {
         /*if (handle != this.minecraft.getWindow().getWindow()) return;
         *///?}
-        //? if >=26.2-snapshot-8 {
-        /*if (this.minecraft.gui.screen() != null) return;
-        *///?} else
-        if (this.minecraft.screen != null) return;
+        if (McCompat.hasScreen(this.minecraft)) return;
         if (!Zoom.handleScroll(yoffset)) return;
 
         ci.cancel();

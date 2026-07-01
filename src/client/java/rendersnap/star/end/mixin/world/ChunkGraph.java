@@ -1,18 +1,23 @@
 package rendersnap.star.end.mixin.world;
 
 import rendersnap.star.end.client.render.Cuts;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.LevelRenderer;
 //? if >=26.1.2 {
+import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import net.minecraft.client.renderer.chunk.SectionMesh;
 import net.minecraft.client.renderer.chunk.TranslucencyPointOfView;
 //?}
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
-//? if >=26.2-snapshot-8 {
+//? if >=26.2 {
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 //?}
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -20,93 +25,172 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.joml.Matrix4fc;
+import org.joml.Vector4f;
+import rendersnap.star.end.client.PreparedChunkCache;
+import rendersnap.star.end.client.McCompat;
 
 @Mixin(LevelRenderer.class)
 public abstract class ChunkGraph {
+    @Unique
+    private static final int RENDERSNAP_FALSE_EMPTY_REPAIR_LIMIT = 8;
 
     @Shadow @Final
     private ObjectArrayList<SectionRenderDispatcher.RenderSection> visibleSections;
+    @Shadow
+    private SectionRenderDispatcher sectionRenderDispatcher;
 
-    @Unique
-    private final ObjectArrayList<SectionRenderDispatcher.RenderSection> hiddenSections = new ObjectArrayList<>();
-    @Unique
-    private final IntArrayList hiddenSectionSlots = new IntArrayList();
-
-    //? if >=26.1.2 && <26.2-snapshot-8 {
-    @Inject(method = "cullTerrain", at = @At("RETURN"))
-    private void cam(Camera camera, net.minecraft.client.renderer.culling.Frustum frustum, boolean captured, CallbackInfo ci) {
-        Cuts.updateCamera(camera);
-    }
-    //?}
-
-    //? if >=26.2-snapshot-8 {
-    /*@Inject(method = "compileSections", at = @At("RETURN"))
-    private void cam(CameraRenderState cam, CallbackInfo ci) {
-        Cuts.updateCamera(cam.pos, cam.orientation);
-        cam.smartCull = Cuts.useSectionOcclusion(cam.smartCull);
-    }
-    *///?}
+    private BlockPos rendersnap$sectionOrigin;
+    private int rendersnap$vanillaVisibleSections;
+    private int rendersnap$trimmedVisibleSections;
+    private int rendersnap$finalVisibleSections;
 
     //? if >=26.1.2 {
-    @Inject(method = "prepareChunkRenders", at = @At("HEAD"))
-    private void cutTerrain(Matrix4fc mv, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
+    @Inject(method = "cullTerrain", at = @At("RETURN"), require = 0)
+    private void cam(Camera camera, net.minecraft.client.renderer.culling.Frustum frustum, boolean captured, CallbackInfo ci) {
+        Cuts.updateCamera(camera);
         cutVisibleSections();
     }
 
-    @Inject(method = "prepareChunkRenders", at = @At("RETURN"))
-    private void putBack(Matrix4fc mv, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
-        restoreSections();
-    }
-    //?}
-
-    //? if >=26.1.2 {
     @Inject(method = "scheduleResort", at = @At("HEAD"), cancellable = true)
     private void skipSort(SectionRenderDispatcher.RenderSection section, TranslucencyPointOfView pov, Vec3 cam, boolean moved, boolean near, CallbackInfo ci) {
+        if (!Cuts.shouldCheckFarTranslucencyResort(near)) return;
         if (Cuts.shouldSkipFarTranslucencyResort(section, pov, cam, near)) {
             ci.cancel();
         }
     }
-    //?}
 
-    //? if >=26.1.2 && <26.2-snapshot-8 {
-    @ModifyArg(
-            method = "cullTerrain",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/SectionOcclusionGraph;update(ZLnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/culling/Frustum;Ljava/util/List;Lit/unimi/dsi/fastutil/longs/LongOpenHashSet;)V"),
-            index = 0
-    )
-    private boolean smartCull(boolean smart) {
-        return Cuts.useSectionOcclusion(smart);
+    //? if >=26.2 {
+    @Inject(method = "render", at = @At("HEAD"), require = 0)
+    private void rendersnap$updateCamera26(
+            GraphicsResourceAllocator allocator,
+            DeltaTracker deltaTracker,
+            boolean renderBlockOutline,
+            CameraRenderState cameraState,
+            Matrix4fc modelViewMatrix,
+            GpuBufferSlice fog,
+            Vector4f fogColor,
+            boolean renderOutline,
+            CallbackInfo ci
+    ) {
+        Cuts.updateCamera(cameraState.pos, cameraState.orientation);
     }
     //?}
 
-    //? if >=26.1.2 {
-    @Unique
-    private void cutVisibleSections() {
-        this.hiddenSections.clear();
-        this.hiddenSectionSlots.clear();
-        Cuts.seeSections(this.visibleSections);
-        if (!Cuts.cutsTerrainSections()) return;
+    @org.spongepowered.asm.mixin.injection.Redirect(
+            method = "prepareChunkRenders",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection;getRenderOrigin()Lnet/minecraft/core/BlockPos;")
+    )
+    private BlockPos rendersnap$captureSectionOrigin(SectionRenderDispatcher.RenderSection section) {
+        this.rendersnap$sectionOrigin = section.getRenderOrigin();
+        return this.rendersnap$sectionOrigin;
+    }
 
-        for (int i = this.visibleSections.size() - 1; i >= 0; i--) {
-            SectionRenderDispatcher.RenderSection section = this.visibleSections.get(i);
-            if (Cuts.shouldSkipTerrainSection(section)) {
-                this.hiddenSectionSlots.add(i);
-                this.hiddenSections.add(this.visibleSections.remove(i));
+    @org.spongepowered.asm.mixin.injection.Redirect(
+            method = "prepareChunkRenders",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/SectionMesh;getSectionDraw(Lnet/minecraft/client/renderer/chunk/ChunkSectionLayer;)Lnet/minecraft/client/renderer/chunk/SectionMesh$SectionDraw;")
+    )
+    private SectionMesh.SectionDraw rendersnap$trimFarLayers(SectionMesh mesh, ChunkSectionLayer layer) {
+        SectionMesh.SectionDraw vanilla = mesh.getSectionDraw(layer);
+        BlockPos origin = this.rendersnap$sectionOrigin;
+        if (Cuts.trimsFarLayers() && origin != null && Cuts.shouldSkipSectionLayer(origin, layer)) {
+            return null;
+        }
+        return vanilla;
+    }
+
+    @org.spongepowered.asm.mixin.injection.Redirect(
+            method = "prepareChunkRenders",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher;getRenderSectionSlice(Lnet/minecraft/client/renderer/chunk/SectionMesh;Lnet/minecraft/client/renderer/chunk/ChunkSectionLayer;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSectionBufferSlice;")
+    )
+    private SectionRenderDispatcher.RenderSectionBufferSlice rendersnap$trimFarSlice(SectionRenderDispatcher dispatcher, SectionMesh mesh, ChunkSectionLayer layer) {
+        BlockPos origin = this.rendersnap$sectionOrigin;
+        if (Cuts.trimsFarLayers() && origin != null && Cuts.shouldSkipSectionLayer(origin, layer)) {
+            return null;
+        }
+        return dispatcher.getRenderSectionSlice(mesh, layer);
+    }
+
+    @Inject(method = "prepareChunkRenders", at = @At("HEAD"), cancellable = true)
+    private void rendersnap$usePreparedCache(Matrix4fc frustumMatrix, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
+        cutVisibleSections();
+        Cuts.publishVisibleCounts(this.rendersnap$vanillaVisibleSections, this.rendersnap$trimmedVisibleSections, this.rendersnap$finalVisibleSections);
+        ChunkSectionsToRender prepared = PreparedChunkCache.get(this.visibleSections, frustumMatrix, this.sectionRenderDispatcher);
+        if (prepared != null) {
+            cir.setReturnValue(prepared);
+        }
+    }
+
+    @Inject(method = "prepareChunkRenders", at = @At("RETURN"), cancellable = true)
+    private void rendersnap$storePreparedCache(Matrix4fc frustumMatrix, CallbackInfoReturnable<ChunkSectionsToRender> cir) {
+        ChunkSectionsToRender prepared = Cuts.aggregateCutoutDraws(cir.getReturnValue());
+        PreparedChunkCache.put(this.visibleSections, prepared, this.sectionRenderDispatcher);
+        if (prepared != cir.getReturnValue()) {
+            cir.setReturnValue(prepared);
+        }
+    }
+
+    @Inject(method = "invalidateCompiledGeometry", at = @At("HEAD"))
+    private void rendersnap$clearPreparedChunksOnInvalidate(CallbackInfo ci) {
+        PreparedChunkCache.clear();
+        Cuts.clearWorldState();
+    }
+
+    @Inject(method = "resetLevelRenderData", at = @At("HEAD"))
+    private void rendersnap$clearPreparedChunksOnReset(CallbackInfo ci) {
+        PreparedChunkCache.clear();
+        Cuts.clearWorldState();
+    }
+
+    private void cutVisibleSections() {
+        this.rendersnap$vanillaVisibleSections = this.visibleSections.size();
+        this.rendersnap$trimmedVisibleSections = 0;
+        if (Cuts.shouldCheckTerrainSections()) {
+            for (int i = this.visibleSections.size() - 1; i >= 0; i--) {
+                SectionRenderDispatcher.RenderSection section = this.visibleSections.get(i);
+                if (Cuts.shouldSkipTerrainSection(section)) {
+                    this.visibleSections.remove(i);
+                    this.rendersnap$trimmedVisibleSections++;
+                }
             }
         }
+
+        this.rendersnap$finalVisibleSections = this.visibleSections.size();
+        rendersnap$repairFalseEmptySections();
+        Cuts.seeSections(this.visibleSections);
+        PreparedChunkCache.captureVisibleSections(this.visibleSections);
     }
 
     @Unique
-    private void restoreSections() {
-        for (int i = this.hiddenSections.size() - 1; i >= 0; i--) {
-            this.visibleSections.add(this.hiddenSectionSlots.getInt(i), this.hiddenSections.get(i));
+    private void rendersnap$repairFalseEmptySections() {
+        var level = McCompat.level((LevelRenderer)(Object)this);
+        if (level == null) {
+            Cuts.recordFalseEmptySectionLevelMiss();
+            return;
         }
-        this.hiddenSections.clear();
-        this.hiddenSectionSlots.clear();
+        int repaired = 0;
+        for (int i = 0; i < this.visibleSections.size(); i++) {
+            SectionRenderDispatcher.RenderSection section = this.visibleSections.get(i);
+            if (McCompat.sectionDirty(section) || McCompat.sectionUncompiled(section)) continue;
+            SectionMesh mesh = section.getSectionMesh();
+            if (mesh.hasRenderableLayers() || section.hasTranslucentGeometry()) continue;
+            Cuts.recordFalseEmptySectionCandidate();
+            boolean falseEmpty = McCompat.sectionHasNonAir(level, section.getRenderOrigin());
+            Cuts.recordFalseEmptySectionCheck(falseEmpty);
+            if (!falseEmpty) continue;
+            McCompat.sectionReset(section);
+            McCompat.sectionSetWasPreviouslyEmpty(section, false);
+            McCompat.sectionSetDirty(section, false);
+            McCompat.sectionSetDirty(section, true);
+            Cuts.recordFalseEmptySectionReset();
+            repaired++;
+            if (repaired >= RENDERSNAP_FALSE_EMPTY_REPAIR_LIMIT) break;
+        }
+        if (repaired > 0) {
+            PreparedChunkCache.clear();
+        }
     }
     //?}
 }

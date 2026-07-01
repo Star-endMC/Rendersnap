@@ -16,6 +16,7 @@ import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
+import rendersnap.star.end.client.McCompat;
 
 import java.util.Optional;
 
@@ -168,7 +169,7 @@ public final class VideoPage extends OptionsSubScreen {
     private OptionInstance<Integer> fullscreen() {
         Window win = this.minecraft.getWindow();
         Monitor monitor = win.findBestMonitor();
-        int current = monitor == null ? -1 : win.getPreferredFullscreenVideoMode().map(monitor::getVideoModeIndex).orElse(-1);
+        int current = monitor == null ? -1 : win.getPreferredFullscreenVideoMode().map(mode -> McCompat.monitorIndexOfMode(monitor, mode)).orElse(-1);
 
         return new OptionInstance<>(
                 "options.fullscreen.resolution",
@@ -176,15 +177,17 @@ public final class VideoPage extends OptionsSubScreen {
                 (caption, mode) -> {
                     if (monitor == null) return Component.translatable("options.fullscreen.unavailable");
                     if (mode == -1) return Options.genericValueLabel(caption, Component.translatable("options.fullscreen.current"));
-                    VideoMode vm = monitor.getMode(mode);
+                    VideoMode vm = McCompat.monitorMode(monitor, mode);
+                    if (vm == null) return Component.translatable("options.fullscreen.unavailable");
                     return Options.genericValueLabel(caption, Component.translatable("options.fullscreen.entry",
                             vm.getWidth(), vm.getHeight(), vm.getRefreshRate(), vm.getRedBits() + vm.getGreenBits() + vm.getBlueBits()));
                 },
-                new OptionInstance.IntRange(-1, monitor != null ? monitor.getModeCount() - 1 : -1),
+                new OptionInstance.IntRange(-1, monitor != null ? McCompat.monitorModeCount(monitor) - 1 : -1),
                 current,
                 mode -> {
                     if (monitor != null) {
-                        win.setPreferredFullscreenVideoMode(mode == -1 ? Optional.empty() : Optional.of(monitor.getMode(mode)));
+                        VideoMode selected = McCompat.monitorMode(monitor, mode);
+                        win.setPreferredFullscreenVideoMode(mode == -1 || selected == null ? Optional.empty() : Optional.of(selected));
                     }
                 }
         );
@@ -200,9 +203,6 @@ public final class VideoPage extends OptionsSubScreen {
     }
 
     private void open(Screen screen) {
-        //? if >=26.2-snapshot-8 {
-        /*this.minecraft.gui.setScreen(screen);
-        *///?} else
-        this.minecraft.setScreen(screen);
+        McCompat.setScreen(this.minecraft, screen);
     }
 }

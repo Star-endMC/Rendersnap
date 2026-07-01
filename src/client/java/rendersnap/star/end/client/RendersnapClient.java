@@ -25,9 +25,11 @@ public final class RendersnapClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         Opts.load();
+        QuantifiedSupport.registerMod();
         readOptions();
         //? if >=26.1.2 {
         Zoom.registerKeybind();
+        RenderReport.registerKeybind();
         hud();
         clientStart();
         ticks();
@@ -60,14 +62,46 @@ public final class RendersnapClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             WorldWarmup.tick(client);
             Zoom.onClientTick(client);
+            RenderReport.onClientTick(client);
         });
     }
     //?}
 
     private static void readOptions() {
+        boolean changed = false;
+        if (Opts.textureLod) {
+            Opts.textureLod = false;
+            changed = true;
+        }
+        if (Opts.chunkShadeTrim) {
+            Opts.chunkShadeTrim = false;
+            changed = true;
+        }
+        if (Opts.fogOcclusion) {
+            Opts.fogOcclusion = false;
+            changed = true;
+        }
+        if (Opts.lightingChunkTrim) {
+            Opts.lightingChunkTrim = false;
+            changed = true;
+        }
+        if (Opts.fluidOptimizer) {
+            Opts.fluidOptimizer = false;
+            changed = true;
+        }
+        if (Opts.cutoutLeafBoost) {
+            Opts.cutoutLeafBoost = false;
+            changed = true;
+        }
+        if (changed) {
+            Opts.save();
+        }
         Zoom.setTransition(Opts.zoomTransition);
         Cuts.setBlockFaceCulling(Opts.blockFaceCulling);
         Cuts.setTextureLod(Opts.textureLod);
+        Cuts.setChunkShadeTrim(Opts.chunkShadeTrim);
+        Cuts.setFarLayerTrim(Opts.farLayerTrim);
+        Cuts.setCutoutLeafBoost(Opts.cutoutLeafBoost);
         Cuts.setEntityCulling(Opts.entityCulling);
         Cuts.setOcclusionCulling(Opts.occlusionCulling);
         Cuts.setFogOcclusion(Opts.fogOcclusion);

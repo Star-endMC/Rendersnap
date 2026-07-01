@@ -16,6 +16,7 @@ public final class WorldWarmup {
             joined(mc.level);
         }
 
+        Cuts.tickWorld(mc);
         Cuts.tickWarmup();
     }
 
