@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
 import rendersnap.star.end.client.ChunkThreads;
+import rendersnap.star.end.client.McCompat;
 import rendersnap.star.end.client.cfg.Opts;
 import rendersnap.star.end.client.render.Cuts;
 import rendersnap.star.end.client.render.zoom.Zoom;
@@ -154,15 +155,12 @@ public final class SnapPage extends OptionsSubScreen {
     }
 
     private static OptionInstance<Boolean> bool(String key, boolean current, Consumer<Boolean> changed) {
-        //? if >=26.2-snapshot-8 {
-        /*return OptionInstance.createBoolean(key, tip(key + ".tooltip"), current, changed::accept);
-        *///?} else
-        return OptionInstance.createBoolean(key, tip(key + ".tooltip"), current, changed);
+        return OptionInstance.createBoolean(key, tip(key + ".tooltip"), current, changed::accept);
     }
 
     private void staleChunks() {
         SystemToast.addOrUpdate(
-                /*? if >=26.2-snapshot-8 {*//* this.minecraft.gui.toastManager() *//*?} else if >=26.1.2 {*/this.minecraft.getToastManager()/*?} else {*//*this.minecraft.getToasts()*//*?}*/,
+                McCompat.toastManager(this.minecraft),
                 RELOAD_TOAST,
                 Component.translatable("rendersnap.toast.reload.title"),
                 Component.translatable("rendersnap.toast.reload.body")

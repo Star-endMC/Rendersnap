@@ -27,6 +27,7 @@ public abstract class WaterLight {
     /*@Inject(method = "getLightColor", at = @At("RETURN"), cancellable = true)
     *///?}
     private void smoothFluidLight(BlockAndTintGetter level, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
+        if (!Cuts.shouldCheckOptimizedFluidLight(pos)) return;
         cir.setReturnValue(Cuts.getOptimizedFluidLight(level, pos, cir.getReturnValue()));
     }
 }

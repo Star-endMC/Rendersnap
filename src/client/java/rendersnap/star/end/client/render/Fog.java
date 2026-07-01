@@ -22,7 +22,7 @@ public final class Fog {
         }
 
         float end = Math.max(64.0f, fogData.renderDistanceEnd);
-        occlusionDistance = end * 0.96f;
+        occlusionDistance = end + 24.0f;
     }
     //?} else {
     /*public static void readVanillaFog(Object fogData) {

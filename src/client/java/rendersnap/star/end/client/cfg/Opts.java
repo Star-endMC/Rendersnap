@@ -25,19 +25,20 @@ public final class Opts {
     public static final int DEFAULT_ZOOM_TRANSITION = 2;
     public static final boolean DEFAULT_BLOCK_FACE_CULLING = true;
     public static final boolean DEFAULT_TEXTURE_LOD = false;
-    public static final boolean DEFAULT_CHUNK_SHADE_TRIM = true;
+    public static final boolean DEFAULT_CHUNK_SHADE_TRIM = false;
     public static final boolean DEFAULT_FAR_LAYER_TRIM = false;
+    public static final boolean DEFAULT_CUTOUT_LEAF_BOOST = false;
     public static final boolean DEFAULT_ENTITY_CULLING = true;
     public static final boolean DEFAULT_OCCLUSION_CULLING = true;
-    public static final boolean DEFAULT_FOG_OCCLUSION = true;
+    public static final boolean DEFAULT_FOG_OCCLUSION = false;
     public static final int BEHIND_CAM_OFF = 0;
     public static final int BEHIND_CAM_NORMAL = 1;
     public static final int BEHIND_CAM_HIGH = 2;
     public static final int DEFAULT_BEHIND_CAM_MODE = BEHIND_CAM_OFF;
-    public static final boolean DEFAULT_LIGHTING_CHUNK_TRIM = true;
+    public static final boolean DEFAULT_LIGHTING_CHUNK_TRIM = false;
     public static final boolean DEFAULT_FAST_LAUNCH = true;
     public static final boolean DEFAULT_HIDE_WEATHER = false;
-    public static final boolean DEFAULT_FLUID_OPTIMIZER = true;
+    public static final boolean DEFAULT_FLUID_OPTIMIZER = false;
     public static final boolean DEFAULT_MULTI_RENDER = false;
 
     public static boolean showFpsOverlay = DEFAULT_SHOW_FPS_OVERLAY;
@@ -49,6 +50,7 @@ public final class Opts {
     public static boolean textureLod = DEFAULT_TEXTURE_LOD;
     public static boolean chunkShadeTrim = DEFAULT_CHUNK_SHADE_TRIM;
     public static boolean farLayerTrim = DEFAULT_FAR_LAYER_TRIM;
+    public static boolean cutoutLeafBoost = DEFAULT_CUTOUT_LEAF_BOOST;
     public static boolean entityCulling = DEFAULT_ENTITY_CULLING;
     public static boolean occlusionCulling = DEFAULT_OCCLUSION_CULLING;
     public static boolean fogOcclusion = DEFAULT_FOG_OCCLUSION;
@@ -102,6 +104,7 @@ public final class Opts {
         textureLod = bool(p, "textureLod", textureLod);
         chunkShadeTrim = bool(p, "chunkShadeTrim", chunkShadeTrim);
         farLayerTrim = bool(p, "farLayerTrim", farLayerTrim);
+        cutoutLeafBoost = bool(p, "cutoutLeafBoost", cutoutLeafBoost);
         entityCulling = bool(p, "entityCulling", entityCulling);
         occlusionCulling = bool(p, "occlusionCulling", occlusionCulling);
         fogOcclusion = bool(p, "fogOcclusion", fogOcclusion);
@@ -146,6 +149,7 @@ public final class Opts {
         p.setProperty("textureLod", String.valueOf(textureLod));
         p.setProperty("chunkShadeTrim", String.valueOf(chunkShadeTrim));
         p.setProperty("farLayerTrim", String.valueOf(farLayerTrim));
+        p.setProperty("cutoutLeafBoost", String.valueOf(cutoutLeafBoost));
         p.setProperty("entityCulling", String.valueOf(entityCulling));
         p.setProperty("occlusionCulling", String.valueOf(occlusionCulling));
         p.setProperty("fogOcclusion", String.valueOf(fogOcclusion));
@@ -169,6 +173,7 @@ public final class Opts {
         textureLod = DEFAULT_TEXTURE_LOD;
         chunkShadeTrim = DEFAULT_CHUNK_SHADE_TRIM;
         farLayerTrim = DEFAULT_FAR_LAYER_TRIM;
+        cutoutLeafBoost = DEFAULT_CUTOUT_LEAF_BOOST;
         entityCulling = DEFAULT_ENTITY_CULLING;
         occlusionCulling = DEFAULT_OCCLUSION_CULLING;
         fogOcclusion = DEFAULT_FOG_OCCLUSION;

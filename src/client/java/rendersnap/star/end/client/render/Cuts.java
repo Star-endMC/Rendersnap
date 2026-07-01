@@ -2,11 +2,27 @@ package rendersnap.star.end.client.render;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.Long2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ByteOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import com.mojang.blaze3d.systems.RenderPass;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
+import com.mojang.blaze3d.vertex.MeshData;
+//? if >=26.2 {
+/*import com.mojang.blaze3d.PrimitiveTopology;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+*///?} else {
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexFormatElement;
+//?}
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import rendersnap.star.end.client.McCompat;
 //? if >=26.1.2 {
 import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
+import net.minecraft.client.renderer.chunk.ChunkSectionsToRender;
+import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.level.BlockAndLightGetter;
 //?} else {
@@ -25,10 +41,10 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import org.admany.quantified.api.CacheRequest;
 import org.admany.quantified.api.QuantifiedAPI;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
@@ -39,16 +55,22 @@ import rendersnap.star.end.client.QuantifiedSupport;
 import rendersnap.star.end.client.render.zoom.Zoom;
 
 import java.time.Duration;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
+import org.lwjgl.system.MemoryUtil;
 
 public final class Cuts {
+    private static final long DEAD_PATH_SUPPRESSION_THRESHOLD = 512L;
     private static boolean blockFaceCulling;
     private static volatile boolean textureLod;
     private static volatile boolean chunkShadeTrim;
     private static volatile boolean farLayerTrim;
+    private static volatile boolean cutoutLeafBoost;
+    private static volatile boolean cutoutFarReplace = false;
     private static volatile boolean entityCulling;
     private static volatile boolean occlusionCulling;
     private static volatile boolean fogOcclusion;
@@ -62,6 +84,7 @@ public final class Cuts {
     private static volatile boolean terrainCullSuppressed;
     private static volatile boolean translucencyResortSuppressed;
     private static volatile boolean lightTrimSuppressed;
+    private static volatile boolean fluidLightSuppressed;
     private static volatile boolean sectionLayerSuppressed;
     private static volatile int vanillaVisibleSections;
     private static volatile int trimmedVisibleSections;
@@ -73,6 +96,8 @@ public final class Cuts {
     private static float stateForwardY;
     private static float stateForwardZ;
     private static LongOpenHashSet stateSeenSections = new LongOpenHashSet(0);
+    private static int stateSeenSectionCount;
+    private static long stateSeenFingerprint;
 
     private static final AtomicReference<ViewState> VIEW = new AtomicReference<>(ViewState.EMPTY);
     private static final AtomicLong LIGHT_CACHE_EPOCH = new AtomicLong();
@@ -87,8 +112,13 @@ public final class Cuts {
     private static final Long2ByteOpenHashMap terrainSectionCache = new Long2ByteOpenHashMap();
     private static final Long2ByteOpenHashMap lightSectionCache = new Long2ByteOpenHashMap();
     private static final Long2ByteOpenHashMap fluidSectionCache = new Long2ByteOpenHashMap();
+    private static final Int2ByteOpenHashMap entityVisibilityCache = new Int2ByteOpenHashMap();
+    private static final Int2LongOpenHashMap entityVisibilityStamp = new Int2LongOpenHashMap();
+    private static final Int2ObjectOpenHashMap<ShadowState> entityShadowCache = new Int2ObjectOpenHashMap<>();
     private static final LongAdder entityCullChecks = new LongAdder();
     private static final LongAdder entityCullSkips = new LongAdder();
+    private static final LongAdder entityCullCacheHits = new LongAdder();
+    private static final LongAdder shadowCacheHits = new LongAdder();
     private static final LongAdder chunkAoChecks = new LongAdder();
     private static final LongAdder chunkAoSkips = new LongAdder();
     private static final LongAdder sectionLayerChecks = new LongAdder();
@@ -104,16 +134,33 @@ public final class Cuts {
     private static final LongAdder lightTrimRejectedNear = new LongAdder();
     private static final LongAdder lightTrimSuppressedCalls = new LongAdder();
     private static final LongAdder fluidLightCalls = new LongAdder();
+    private static final LongAdder fluidLightEligible = new LongAdder();
     private static final LongAdder fluidLightRejectedFar = new LongAdder();
+    private static final LongAdder fluidLightSuppressedCalls = new LongAdder();
     private static final LongAdder translucencyResortChecks = new LongAdder();
     private static final LongAdder translucencyResortSkips = new LongAdder();
     private static final LongAdder translucencyResortSuppressedChecks = new LongAdder();
+    private static final LongAdder cutoutLeafChecks = new LongAdder();
+    private static final LongAdder cutoutLeafForcedOpaque = new LongAdder();
+    private static final LongAdder cutoutLeafVanillaOpaque = new LongAdder();
+    private static final LongAdder cutoutFarChecks = new LongAdder();
+    private static final LongAdder cutoutFarReduced = new LongAdder();
+    private static final LongAdder cutoutFarRejectedNear = new LongAdder();
+    private static final LongAdder cutoutFarRejectedSmall = new LongAdder();
+    private static final LongAdder cutoutFarRejectedShape = new LongAdder();
+    private static final LongAdder cutoutFarSourceQuads = new LongAdder();
+    private static final LongAdder cutoutFarReducedQuads = new LongAdder();
+    private static final LongAdder cutoutAggPasses = new LongAdder();
+    private static final LongAdder cutoutAggListsBefore = new LongAdder();
+    private static final LongAdder cutoutAggListsAfter = new LongAdder();
 
     private Cuts() {
         sectionLayerCutoutCache.defaultReturnValue((byte)-1);
         terrainSectionCache.defaultReturnValue((byte)-1);
         lightSectionCache.defaultReturnValue((byte)-1);
         fluidSectionCache.defaultReturnValue((byte)-1);
+        entityVisibilityCache.defaultReturnValue((byte)-1);
+        entityVisibilityStamp.defaultReturnValue(Long.MIN_VALUE);
     }
 
     public static void setBlockFaceCulling(boolean on) {
@@ -138,8 +185,68 @@ public final class Cuts {
         rebuildChunks();
     }
 
+    public static void setCutoutLeafBoost(boolean on) {
+        if (cutoutLeafBoost == on) return;
+        cutoutLeafBoost = on;
+        rebuildChunks();
+    }
+
     public static boolean trimsFarLayers() {
         return farLayerTrim;
+    }
+
+    public static boolean shouldForceOpaqueCutoutLeaves(boolean cutoutLeaves, BlockState state) {
+        cutoutLeafChecks.increment();
+        if (!(state.getBlock() instanceof LeavesBlock)) return false;
+        if (!cutoutLeaves) {
+            cutoutLeafVanillaOpaque.increment();
+            return true;
+        }
+        if (!cutoutLeafBoost) return false;
+        cutoutLeafForcedOpaque.increment();
+        return true;
+    }
+
+    public static MeshData reduceFarCutoutMesh(SectionPos pos, MeshData mesh) {
+        cutoutFarChecks.increment();
+        return mesh;
+    }
+
+    public static ChunkSectionsToRender aggregateCutoutDraws(ChunkSectionsToRender prepared) {
+        if (prepared == null) {
+            return null;
+        }
+        boolean mergeCutoutDraws = true;
+        //? if >=26.2 {
+        /*mergeCutoutDraws = false;*/
+        //?}
+        if (!mergeCutoutDraws) {
+            return prepared;
+        }
+        Int2ObjectOpenHashMap<List<RenderPass.Draw<com.mojang.blaze3d.buffers.GpuBufferSlice[]>>> cutout =
+                prepared.drawGroupsPerLayer().get(ChunkSectionLayer.CUTOUT);
+        if (cutout == null || cutout.size() <= 1) {
+            return prepared;
+        }
+        ArrayList<RenderPass.Draw<com.mojang.blaze3d.buffers.GpuBufferSlice[]>> merged = new ArrayList<>();
+        for (List<RenderPass.Draw<com.mojang.blaze3d.buffers.GpuBufferSlice[]>> list : cutout.values()) {
+            merged.addAll(list);
+        }
+        if (merged.isEmpty()) {
+            return prepared;
+        }
+        var copy = new java.util.EnumMap<ChunkSectionLayer, Int2ObjectOpenHashMap<List<RenderPass.Draw<com.mojang.blaze3d.buffers.GpuBufferSlice[]>>>>(ChunkSectionLayer.class);
+        for (var entry : prepared.drawGroupsPerLayer().entrySet()) {
+            if (entry.getKey() == ChunkSectionLayer.CUTOUT) continue;
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        Int2ObjectOpenHashMap<List<RenderPass.Draw<com.mojang.blaze3d.buffers.GpuBufferSlice[]>>> one = new Int2ObjectOpenHashMap<>();
+        one.put(0, merged);
+        copy.put(ChunkSectionLayer.CUTOUT, one);
+        cutoutAggPasses.increment();
+        cutoutAggListsBefore.add(cutout.size());
+        cutoutAggListsAfter.add(1);
+        return new ChunkSectionsToRender(prepared.textureView(), copy, prepared.maxIndicesRequired(), prepared.chunkSectionInfos());
     }
 
     public static void setEntityCulling(boolean on) {
@@ -186,6 +293,8 @@ public final class Cuts {
     public static void warmup(int ticks) {
         warmupTicks = Math.max(warmupTicks, ticks);
         stateSeenSections = new LongOpenHashSet(0);
+        stateSeenSectionCount = 0;
+        stateSeenFingerprint = 0L;
         publishView(VIEW.get().hasCamera());
         bumpLightCacheEpoch();
         PreparedChunkCache.clear();
@@ -208,6 +317,8 @@ public final class Cuts {
         stateForwardY = 0.0f;
         stateForwardZ = 0.0f;
         stateSeenSections = new LongOpenHashSet(0);
+        stateSeenSectionCount = 0;
+        stateSeenFingerprint = 0L;
         publishView(false);
         bumpLightCacheEpoch();
         PreparedChunkCache.clear();
@@ -273,18 +384,62 @@ public final class Cuts {
     }
 
     public static void seeSections(List<SectionRenderDispatcher.RenderSection> sections) {
-        LongOpenHashSet seen = new LongOpenHashSet(Math.max(16, sections.size() * 2));
-        for (int i = 0, n = sections.size(); i < n; i++) {
+        int size = sections.size();
+        long xor = 0L;
+        long sum = 0x9E3779B97F4A7C15L;
+        long[] keys = new long[size];
+        for (int i = 0; i < size; i++) {
             //? if >=26.1.2 {
             SectionRenderDispatcher.RenderSection section = sections.get(i);
             BlockPos p = section.getRenderOrigin();
             //?} else {
             /*BlockPos p = sections.get(i).getOrigin();
             *///?}
-            seen.add(SectionPos.asLong(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4));
+            long key = SectionPos.asLong(p.getX() >> 4, p.getY() >> 4, p.getZ() >> 4);
+            keys[i] = key;
+            long mixed = mix64(key);
+            xor ^= mixed;
+            sum += mixed;
+        }
+        long fingerprint = mix64(xor) ^ Long.rotateLeft(sum, 17);
+        if (size == stateSeenSectionCount && fingerprint == stateSeenFingerprint) {
+            return;
+        }
+        LongOpenHashSet seen = new LongOpenHashSet(Math.max(16, size * 2));
+        for (int i = 0; i < size; i++) {
+            seen.add(keys[i]);
         }
         stateSeenSections = seen;
+        stateSeenSectionCount = size;
+        stateSeenFingerprint = fingerprint;
         publishView(VIEW.get().hasCamera());
+    }
+
+    public static boolean restoreShadowState(Entity entity, EntityRenderState state) {
+        if (entity == null || state == null) return false;
+        ShadowState cached = entityShadowCache.get(entity.getId());
+        if (cached == null) return false;
+        if (cached.cameraSection() != cameraSection) return false;
+        if (cached.cameraStamp() != cameraPoseStamp()) return false;
+        if (cached.entityPos() != entity.blockPosition().asLong()) return false;
+        if (cached.distanceBucket() != shadowDistanceBucket(state.distanceToCameraSq)) return false;
+        state.shadowRadius = cached.shadowRadius();
+        state.shadowPieces.clear();
+        state.shadowPieces.addAll(cached.shadowPieces());
+        shadowCacheHits.increment();
+        return true;
+    }
+
+    public static void storeShadowState(Entity entity, EntityRenderState state) {
+        if (entity == null || state == null) return;
+        entityShadowCache.put(entity.getId(), new ShadowState(
+                entity.blockPosition().asLong(),
+                cameraSection,
+                cameraPoseStamp(),
+                shadowDistanceBucket(state.distanceToCameraSq),
+                state.shadowRadius,
+                List.copyOf(state.shadowPieces)
+        ));
     }
 
     public static boolean shouldCullEntity(Entity e, Camera camera, double camX, double camY, double camZ) {
@@ -293,33 +448,44 @@ public final class Cuts {
         if (camera == null || e == null) return false;
         if (warming() || Zoom.isZooming()) return false;
 
+        long entityStamp = entityCullStamp();
+        int entityId = e.getId();
+        if (entityVisibilityStamp.get(entityId) == entityStamp) {
+            byte cached = entityVisibilityCache.get(entityId);
+            if (cached >= 0) {
+                entityCullCacheHits.increment();
+                if (cached == 1) entityCullSkips.increment();
+                return cached == 1;
+            }
+        }
+
         //? if >=26.1.2 {
         Entity camEnt = camera.entity();
         //?} else {
         /*Entity camEnt = camera.getEntity();
         *///?}
-        if (e == camEnt || e instanceof Player) return false;
-        if (e.isCurrentlyGlowing()) return false;
-        if (e.isVehicle() || e.isPassenger()) return false;
+        if (e == camEnt || e instanceof Player) return rememberEntityCull(entityId, entityStamp, false);
+        if (e.isCurrentlyGlowing()) return rememberEntityCull(entityId, entityStamp, false);
+        if (e.isVehicle() || e.isPassenger()) return rememberEntityCull(entityId, entityStamp, false);
 
         double dx = e.getX() - camX;
         double dy = e.getY() - camY;
         double dz = e.getZ() - camZ;
         double distSq = dx * dx + dy * dy + dz * dz;
-        if (distSq < 1024.0) return false;
+        if (distSq < 1024.0) return rememberEntityCull(entityId, entityStamp, false);
 
         ViewState view = VIEW.get();
         if (behindCam() && distSq >= 1600.0 && behind(view, dx, dy, dz, Math.sqrt(distSq))) {
             entityCullSkips.increment();
-            return true;
+            return rememberEntityCull(entityId, entityStamp, true);
         }
         if (e instanceof LivingEntity living) {
             if (living.getHealth() <= 0.0f) {
                 entityCullSkips.increment();
-                return true;
+                return rememberEntityCull(entityId, entityStamp, true);
             }
         }
-        if (!entityCulling || !view.hasSections()) return false;
+        if (!entityCulling || !view.hasSections()) return rememberEntityCull(entityId, entityStamp, false);
 
         AABB box = e.getBoundingBox();
         int minX = Mth.floor(box.minX) >> 4;
@@ -333,13 +499,13 @@ public final class Cuts {
             for (int sy = minY; sy <= maxY; sy++) {
                 for (int sz = minZ; sz <= maxZ; sz++) {
                     if (view.seenSections().contains(SectionPos.asLong(sx, sy, sz))) {
-                        return false;
+                        return rememberEntityCull(entityId, entityStamp, false);
                     }
                 }
             }
         }
         entityCullSkips.increment();
-        return true;
+        return rememberEntityCull(entityId, entityStamp, true);
     }
 
     public static boolean hidesJoinedFace(BlockState state, BlockState near) {
@@ -386,7 +552,7 @@ public final class Cuts {
         if (cached >= 0) {
             sectionLayerCacheHits.increment();
             if (cached == 1) sectionLayerSkips.increment();
-            else if (sectionLayerChecks.sum() >= 4096L && sectionLayerSkips.sum() == 0L) sectionLayerSuppressed = true;
+            else if (sectionLayerChecks.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && sectionLayerSkips.sum() == 0L) sectionLayerSuppressed = true;
             return cached == 1;
         }
 
@@ -404,7 +570,7 @@ public final class Cuts {
         }
         sectionLayerCutoutCache.put(key, skip ? (byte)1 : (byte)0);
         if (skip) sectionLayerSkips.increment();
-        else if (sectionLayerChecks.sum() >= 4096L && sectionLayerSkips.sum() == 0L) sectionLayerSuppressed = true;
+        else if (sectionLayerChecks.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && sectionLayerSkips.sum() == 0L) sectionLayerSuppressed = true;
         return skip;
     }
 
@@ -437,7 +603,7 @@ public final class Cuts {
         byte sectionCached = lightSectionCache.get(sectionKey);
         if (sectionCached == 0) {
             lightTrimRejectedNear.increment();
-            if (lightTrimCalls.sum() >= 32768L && lightTrimEligible.sum() == 0L) {
+            if (lightTrimCalls.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && lightTrimEligible.sum() == 0L) {
                 lightTrimSuppressed = true;
                 lightTrimSuppressedCalls.increment();
             }
@@ -451,7 +617,7 @@ public final class Cuts {
             lightSectionCache.put(sectionKey, farEnough ? (byte)1 : (byte)0);
             if (!farEnough) {
                 lightTrimRejectedNear.increment();
-                if (lightTrimCalls.sum() >= 32768L && lightTrimEligible.sum() == 0L) {
+                if (lightTrimCalls.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && lightTrimEligible.sum() == 0L) {
                     lightTrimSuppressed = true;
                     lightTrimSuppressedCalls.increment();
                 }
@@ -469,13 +635,25 @@ public final class Cuts {
             return packed;
         }
         String key = lightCacheKey(pos);
-        return lightCache().get(key, () -> packed);
+        return QuantifiedSupport.lightCache(LIGHT_CACHE_TTL, 4096).get(key, () -> packed);
+    }
+
+    public static boolean shouldCheckTrimmedLight(BlockPos pos) {
+        if (pos == null) return false;
+        if (lightTrimSuppressed || warming() || !lightingChunkTrim || Zoom.isZooming()) return false;
+        ViewState view = VIEW.get();
+        if (!view.hasCamera()) return false;
+        return sectionDistanceSq(view, pos) >= 36864.0;
     }
 
     public static int getOptimizedFluidLight(BlockAndTintGetter level, BlockPos pos, int original) {
         fluidLightCalls.increment();
         if (warming() || !fluidOptimizer) return original;
         if (Zoom.isZooming()) return original;
+        if (fluidLightSuppressed) {
+            fluidLightSuppressedCalls.increment();
+            return original;
+        }
 
         ViewState view = VIEW.get();
         if (!view.hasCamera()) return original;
@@ -484,19 +662,25 @@ public final class Cuts {
         byte sectionCached = fluidSectionCache.get(sectionKey);
         if (sectionCached == 0) {
             fluidLightRejectedFar.increment();
+        if (fluidLightCalls.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && fluidLightEligible.sum() == 0L) {
+                fluidLightSuppressed = true;
+                fluidLightSuppressedCalls.increment();
+            }
             return original;
         }
         if (sectionCached < 0) {
-            double dx = (SectionPos.sectionToBlockCoord(SectionPos.x(sectionKey)) + 8.5) - view.cameraX();
-            double dy = (SectionPos.sectionToBlockCoord(SectionPos.y(sectionKey)) + 8.5) - view.cameraY();
-            double dz = (SectionPos.sectionToBlockCoord(SectionPos.z(sectionKey)) + 8.5) - view.cameraZ();
-            boolean nearEnough = dx * dx + dy * dy + dz * dz < 12544.0;
+            boolean nearEnough = sectionDistanceSq(view, pos) < 12544.0;
             fluidSectionCache.put(sectionKey, nearEnough ? (byte)1 : (byte)0);
             if (!nearEnough) {
                 fluidLightRejectedFar.increment();
+                if (fluidLightCalls.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && fluidLightEligible.sum() == 0L) {
+                    fluidLightSuppressed = true;
+                    fluidLightSuppressedCalls.increment();
+                }
                 return original;
             }
         }
+        fluidLightEligible.increment();
 
         int block = blockLight(original) * 2;
         int sky = skyLight(original) * 2;
@@ -513,6 +697,14 @@ public final class Cuts {
             samples++;
         }
         return packLight(Math.max(blockLight(original), block / samples), Math.max(skyLight(original), sky / samples));
+    }
+
+    public static boolean shouldCheckOptimizedFluidLight(BlockPos pos) {
+        if (pos == null) return false;
+        if (warming() || !fluidOptimizer || Zoom.isZooming() || fluidLightSuppressed) return false;
+        ViewState view = VIEW.get();
+        if (!view.hasCamera()) return false;
+        return sectionDistanceSq(view, pos) < 12544.0;
     }
 
     //? if >=26.1.2 {
@@ -535,10 +727,14 @@ public final class Cuts {
         double distSq = dx * dx + dy * dy + dz * dz;
         boolean skip = distSq >= 1600.0 && behind(VIEW.get(), dx, dy, dz, Math.sqrt(distSq));
         if (skip) translucencyResortSkips.increment();
-        else if (translucencyResortChecks.sum() >= 4096L && translucencyResortSkips.sum() == 0L) translucencyResortSuppressed = true;
+        else if (translucencyResortChecks.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && translucencyResortSkips.sum() == 0L) translucencyResortSuppressed = true;
         return skip;
     }
     //?}
+
+    public static boolean shouldCheckFarTranslucencyResort(boolean near) {
+        return !near && !translucencyResortSuppressed && !warming() && behindCam() && !Zoom.isZooming();
+    }
 
     public static boolean shouldSkipTerrainSection(SectionRenderDispatcher.RenderSection section) {
         terrainSectionChecks.increment();
@@ -560,7 +756,7 @@ public final class Cuts {
             terrainSectionCacheHits.increment();
             if (cached == 1) {
                 terrainSectionSkips.increment();
-            } else if (terrainSectionChecks.sum() >= 4096L && terrainSectionSkips.sum() == 0L) {
+            } else if (terrainSectionChecks.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && terrainSectionSkips.sum() == 0L) {
                 terrainCullSuppressed = true;
             }
             return cached == 1;
@@ -578,12 +774,16 @@ public final class Cuts {
         }
         terrainSectionCache.put(key, skip ? (byte)1 : (byte)0);
         if (skip) terrainSectionSkips.increment();
-        else if (terrainSectionChecks.sum() >= 4096L && terrainSectionSkips.sum() == 0L) terrainCullSuppressed = true;
+        else if (terrainSectionChecks.sum() >= DEAD_PATH_SUPPRESSION_THRESHOLD && terrainSectionSkips.sum() == 0L) terrainCullSuppressed = true;
         return skip;
     }
 
     public static boolean cutsTerrainSections() {
         return cutsTerrainSections(VIEW.get());
+    }
+
+    public static boolean shouldCheckTerrainSections() {
+        return !terrainCullSuppressed && cutsTerrainSections(VIEW.get());
     }
 
     public static int currentSectionTier(BlockPos pos) {
@@ -694,21 +894,72 @@ public final class Cuts {
         terrainSectionCache.clear();
         lightSectionCache.clear();
         fluidSectionCache.clear();
+        entityVisibilityCache.clear();
+        entityVisibilityStamp.clear();
+        entityShadowCache.clear();
+    }
+
+    private static boolean rememberEntityCull(int entityId, long stamp, boolean culled) {
+        entityVisibilityStamp.put(entityId, stamp);
+        entityVisibilityCache.put(entityId, culled ? (byte)1 : (byte)0);
+        return culled;
+    }
+
+    private static long entityCullStamp() {
+        return mix64(cameraSection)
+                ^ Long.rotateLeft(stateSeenFingerprint, 11)
+                ^ Long.rotateLeft(cameraPoseStamp(), 23)
+                ^ (LIGHT_CACHE_EPOCH.get() << 1);
+    }
+
+    public static long preparedCameraStamp() {
+        return mix64(cameraSection)
+                ^ Long.rotateLeft(cameraPoseStamp(), 19)
+                ^ Long.rotateLeft(stateSeenFingerprint, 7);
+    }
+
+    private static long cameraPoseStamp() {
+        long x = (long)Mth.floor(stateCameraX * 2.0);
+        long y = (long)Mth.floor(stateCameraY * 2.0);
+        long z = (long)Mth.floor(stateCameraZ * 2.0);
+        long fx = (long)Mth.floor((stateForwardX + 1.0f) * 128.0f);
+        long fy = (long)Mth.floor((stateForwardY + 1.0f) * 128.0f);
+        long fz = (long)Mth.floor((stateForwardZ + 1.0f) * 128.0f);
+        long packed = x;
+        packed = mix64(packed ^ Long.rotateLeft(y, 13));
+        packed = mix64(packed ^ Long.rotateLeft(z, 27));
+        packed ^= fx << 8;
+        packed ^= fy << 20;
+        packed ^= fz << 32;
+        return packed;
+    }
+
+    private static int shadowDistanceBucket(double distanceToCameraSq) {
+        return Mth.floor(distanceToCameraSq / 16.0);
     }
 
     private static void clearAdaptiveSuppressions() {
         terrainCullSuppressed = false;
         translucencyResortSuppressed = false;
         lightTrimSuppressed = false;
+        fluidLightSuppressed = false;
         sectionLayerSuppressed = false;
     }
 
-    private static CacheRequest lightCache() {
-        return QuantifiedAPI.cache(Rendersnap.MOD_ID, "light_cache")
-                .memoryOnly()
-                .maxEntries(4096)
-                .ttl(LIGHT_CACHE_TTL)
-                .fixedTtl();
+    private static double sectionDistanceSq(ViewState view, BlockPos pos) {
+        double dx = (SectionPos.blockToSectionCoord(pos.getX()) * 16 + 8.5) - view.cameraX();
+        double dy = (SectionPos.blockToSectionCoord(pos.getY()) * 16 + 8.5) - view.cameraY();
+        double dz = (SectionPos.blockToSectionCoord(pos.getZ()) * 16 + 8.5) - view.cameraZ();
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    private static long mix64(long value) {
+        value ^= value >>> 33;
+        value *= 0xff51afd7ed558ccdL;
+        value ^= value >>> 33;
+        value *= 0xc4ceb9fe1a85ec53L;
+        value ^= value >>> 33;
+        return value;
     }
 
     private static String lightCacheKey(BlockPos pos) {
@@ -728,13 +979,20 @@ public final class Cuts {
     ) {
         private static final ViewState EMPTY = new ViewState(false, false, 0.0, 0.0, 0.0, 0.0f, 0.0f, 0.0f, new LongOpenHashSet(0));
     }
+
+    private record ShadowState(
+            long entityPos,
+            long cameraSection,
+            long cameraStamp,
+            int distanceBucket,
+            float shadowRadius,
+            List<EntityRenderState.ShadowPiece> shadowPieces
+    ) {
+    }
     private static void rebuildChunks() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level != null) {
-            //? if >=26.2-snapshot-8 {
-            /*mc.levelRenderer.resetLevelRenderData();
-            *///?} else
-            mc.levelRenderer.allChanged();
+            McCompat.resetLevelRenderer(mc);
         }
         PreparedChunkCache.clear();
     }
@@ -742,13 +1000,7 @@ public final class Cuts {
     private static void resetTerrainSampler() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.levelRenderer != null) {
-            //? if >=26.2-snapshot-8 {
-            /*mc.levelRenderer.resetLevelRenderData();
-            *///?} else if >=26.1.2 {
-            mc.levelRenderer.resetSampler();
-            //?} else {
-            /*mc.levelRenderer.allChanged();
-            *///?}
+            McCompat.resetLevelRenderer(mc);
         }
         PreparedChunkCache.clear();
     }
@@ -759,6 +1011,8 @@ public final class Cuts {
         out.append("textureLod=").append(textureLod).append('\n');
         out.append("chunkShadeTrim=").append(chunkShadeTrim).append('\n');
         out.append("farLayerTrim=").append(farLayerTrim).append('\n');
+        out.append("cutoutLeafBoost=").append(cutoutLeafBoost).append('\n');
+        out.append("cutoutFarReplace=").append(cutoutFarReplace).append('\n');
         out.append("entityCulling=").append(entityCulling).append('\n');
         out.append("occlusionCulling=").append(occlusionCulling).append('\n');
         out.append("fogOcclusion=").append(fogOcclusion).append('\n');
@@ -780,6 +1034,8 @@ public final class Cuts {
         out.append("finalVisibleSections=").append(finalVisibleSections).append('\n');
         out.append("entityCullChecks=").append(entityCullChecks.sum()).append('\n');
         out.append("entityCullSkips=").append(entityCullSkips.sum()).append('\n');
+        out.append("entityCullCacheHits=").append(entityCullCacheHits.sum()).append('\n');
+        out.append("shadowCacheHits=").append(shadowCacheHits.sum()).append('\n');
         out.append("chunkAoChecks=").append(chunkAoChecks.sum()).append('\n');
         out.append("chunkAoSkips=").append(chunkAoSkips.sum()).append('\n');
         out.append("sectionLayerChecks=").append(sectionLayerChecks.sum()).append('\n');
@@ -798,10 +1054,35 @@ public final class Cuts {
         out.append("lightTrimSuppressed=").append(lightTrimSuppressed).append('\n');
         out.append("lightTrimSuppressedCalls=").append(lightTrimSuppressedCalls.sum()).append('\n');
         out.append("fluidLightCalls=").append(fluidLightCalls.sum()).append('\n');
+        out.append("fluidLightEligible=").append(fluidLightEligible.sum()).append('\n');
         out.append("fluidLightRejectedFar=").append(fluidLightRejectedFar.sum()).append('\n');
+        out.append("fluidLightSuppressed=").append(fluidLightSuppressed).append('\n');
+        out.append("fluidLightSuppressedCalls=").append(fluidLightSuppressedCalls.sum()).append('\n');
         out.append("translucencyResortChecks=").append(translucencyResortChecks.sum()).append('\n');
         out.append("translucencyResortSkips=").append(translucencyResortSkips.sum()).append('\n');
         out.append("translucencyResortSuppressed=").append(translucencyResortSuppressed).append('\n');
         out.append("translucencyResortSuppressedChecks=").append(translucencyResortSuppressedChecks.sum()).append('\n');
+        out.append("cutoutLeafChecks=").append(cutoutLeafChecks.sum()).append('\n');
+        out.append("cutoutLeafForcedOpaque=").append(cutoutLeafForcedOpaque.sum()).append('\n');
+        out.append("cutoutLeafVanillaOpaque=").append(cutoutLeafVanillaOpaque.sum()).append('\n');
+        out.append("cutoutFarChecks=").append(cutoutFarChecks.sum()).append('\n');
+        out.append("cutoutFarReduced=").append(cutoutFarReduced.sum()).append('\n');
+        out.append("cutoutFarRejectedNear=").append(cutoutFarRejectedNear.sum()).append('\n');
+        out.append("cutoutFarRejectedSmall=").append(cutoutFarRejectedSmall.sum()).append('\n');
+        out.append("cutoutFarRejectedShape=").append(cutoutFarRejectedShape.sum()).append('\n');
+        out.append("cutoutFarSourceQuads=").append(cutoutFarSourceQuads.sum()).append('\n');
+        out.append("cutoutFarReducedQuads=").append(cutoutFarReducedQuads.sum()).append('\n');
+        out.append("cutoutAggPasses=").append(cutoutAggPasses.sum()).append('\n');
+        out.append("cutoutAggListsBefore=").append(cutoutAggListsBefore.sum()).append('\n');
+        out.append("cutoutAggListsAfter=").append(cutoutAggListsAfter.sum()).append('\n');
+    }
+
+    private static int dominantFace(float nx, float ny, float nz) {
+        float ax = Math.abs(nx);
+        float ay = Math.abs(ny);
+        float az = Math.abs(nz);
+        if (ax >= ay && ax >= az) return nx >= 0.0f ? 0 : 1;
+        if (ay >= az) return ny >= 0.0f ? 2 : 3;
+        return nz >= 0.0f ? 4 : 5;
     }
 }

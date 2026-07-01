@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import rendersnap.star.end.client.McCompat;
 import rendersnap.star.end.client.menu.VideoPage;
 
 import java.util.function.Supplier;
@@ -35,10 +36,7 @@ public abstract class OptsBtn extends Screen {
         cir.setReturnValue(Button.builder(label, btn -> {
             Minecraft mc = this.minecraft;
             if (mc != null) {
-                //? if >=26.2-snapshot-8 {
-                /*mc.gui.setScreen(new VideoPage((Screen)(Object)this, mc, this.options));
-                *///?} else
-                mc.setScreen(new VideoPage((Screen)(Object)this, mc, this.options));
+                McCompat.setScreen(mc, new VideoPage((Screen)(Object)this, mc, this.options));
             }
         }).build());
     }

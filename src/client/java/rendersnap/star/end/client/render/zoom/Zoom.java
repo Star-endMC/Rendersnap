@@ -7,6 +7,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
+import rendersnap.star.end.client.McCompat;
 
 import java.util.List;
 
@@ -147,10 +148,7 @@ public final class Zoom {
     }
 
     private static boolean hasScreen(Minecraft client) {
-        //? if >=26.2-snapshot-8 {
-        /*return client.gui.screen() != null;
-        *///?} else
-        return client.screen != null;
+        return McCompat.hasScreen(client);
     }
 
     private enum Ease {

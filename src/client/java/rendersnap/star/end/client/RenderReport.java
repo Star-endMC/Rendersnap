@@ -45,6 +45,8 @@ public final class RenderReport {
     private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss_SSS").withZone(ZoneId.systemDefault());
     private static final DateTimeFormatter TEXT_TIME = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault());
     private static final SystemToast.SystemToastId TOAST = new SystemToast.SystemToastId();
+    private static int[] lastVisibleLayerSections = new int[ChunkSectionLayer.values().length];
+    private static long[] lastVisibleLayerIndices = new long[ChunkSectionLayer.values().length];
     private static KeyMapping key;
 
     private RenderReport() {
@@ -73,7 +75,7 @@ public final class RenderReport {
             Path path = write(mc);
             Rendersnap.LOGGER.info("Rendersnap render report written to {}", path);
             SystemToast.addOrUpdate(
-                    mc.getToastManager(),
+                    McCompat.toastManager(mc),
                     TOAST,
                     net.minecraft.network.chat.Component.literal("Rendersnap Render Report"),
                     net.minecraft.network.chat.Component.literal(path.getFileName().toString())
@@ -81,7 +83,7 @@ public final class RenderReport {
         } catch (Throwable t) {
             Rendersnap.LOGGER.warn("Failed to write render report", t);
             SystemToast.addOrUpdate(
-                    mc.getToastManager(),
+                    McCompat.toastManager(mc),
                     TOAST,
                     net.minecraft.network.chat.Component.literal("Rendersnap Render Report Failed"),
                     net.minecraft.network.chat.Component.literal(t.getClass().getSimpleName() + ": " + String.valueOf(t.getMessage()))
@@ -112,10 +114,10 @@ public final class RenderReport {
         section(out, "Header");
         line(out, "timestamp", TEXT_TIME.format(Instant.now()));
         line(out, "launchedVersion", mc.getLaunchedVersion());
-        line(out, "versionType", mc.getVersionType());
+        line(out, "versionType", McCompat.versionType(mc));
         line(out, "gameDirectory", mc.gameDirectory.getAbsolutePath());
         line(out, "isLocalServer", mc.isLocalServer());
-        line(out, "isSingleplayer", mc.isSingleplayer());
+        line(out, "isSingleplayer", McCompat.isSingleplayer(mc));
         line(out, "windowActive", mc.isWindowActive());
         line(out, "paused", mc.isPaused());
         line(out, "fps", mc.getFps());
@@ -123,7 +125,7 @@ public final class RenderReport {
         line(out, "gpuUtilization", mc.getGpuUtilization());
         line(out, "wireframe", mc.wireframe);
         line(out, "smartCull", mc.smartCull);
-        line(out, "shaderTransparency", Minecraft.useShaderTransparency());
+        line(out, "shaderTransparency", safeOption(() -> mc.options.improvedTransparency().get()));
         line(out, "gpu.vendor", Gpu.vendor());
         line(out, "gpu.renderer", Gpu.renderer());
         line(out, "gpu.version", Gpu.version());
@@ -135,6 +137,8 @@ public final class RenderReport {
 
     private static void appendOptions(StringBuilder out, Minecraft mc) {
         section(out, "Options");
+        int framerateLimit = mc.options.framerateLimit().get();
+        int unlimitedCutoff = unlimitedFramerateCutoff(mc);
         line(out, "renderDistance", mc.options.renderDistance().get());
         line(out, "simulationDistance", mc.options.simulationDistance().get());
         line(out, "prioritizeChunkUpdates", mc.options.prioritizeChunkUpdates().get());
@@ -150,7 +154,10 @@ public final class RenderReport {
         line(out, "mipmapLevels", mc.options.mipmapLevels().get());
         line(out, "textureFiltering", mc.options.textureFiltering().get());
         line(out, "maxAnisotropyBit", mc.options.maxAnisotropyBit().get());
-        line(out, "framerateLimit", mc.options.framerateLimit().get());
+        line(out, "framerateLimit", framerateLimit);
+        line(out, "framerateLimitRaw", framerateLimit);
+        line(out, "framerateLimitUnlimitedCutoff", unlimitedCutoff < 0 ? "<missing>" : unlimitedCutoff);
+        line(out, "framerateLimitMode", describeFramerateLimit(framerateLimit, unlimitedCutoff));
         line(out, "inactivityFpsLimit", safeOption(() -> mc.options.inactivityFpsLimit().get()));
         line(out, "vsync", mc.options.enableVsync().get());
         line(out, "fullscreen", mc.options.fullscreen().get());
@@ -169,6 +176,7 @@ public final class RenderReport {
         line(out, "textureLod", Opts.textureLod);
         line(out, "chunkShadeTrim", Opts.chunkShadeTrim);
         line(out, "farLayerTrim", Opts.farLayerTrim);
+        line(out, "cutoutLeafBoost", Opts.cutoutLeafBoost);
         line(out, "entityCulling", Opts.entityCulling);
         line(out, "occlusionCulling", Opts.occlusionCulling);
         line(out, "fogOcclusion", Opts.fogOcclusion);
@@ -203,7 +211,7 @@ public final class RenderReport {
         line(out, "globalBlockEntities", level.getGloballyRenderedBlockEntities().size());
         line(out, "chunkStats", level.gatherChunkSourceStats());
         line(out, "serverSimulationDistance", level.getServerSimulationDistance());
-        line(out, "cloudColor", mc.levelRenderer.getCloudRenderer().toString());
+        line(out, "cloudColor", String.valueOf(McCompat.cloudRenderer(mc.levelRenderer)));
 
         if (player != null) {
             line(out, "player.pos", formatVec(player.getX(), player.getY(), player.getZ()));
@@ -223,34 +231,34 @@ public final class RenderReport {
     private static void appendRenderer(StringBuilder out, Minecraft mc) {
         section(out, "LevelRenderer");
         LevelRenderer renderer = mc.levelRenderer;
-        line(out, "sectionStatistics", renderer.getSectionStatistics());
-        line(out, "entityStatistics", renderer.getEntityStatistics());
-        line(out, "renderedSections", renderer.countRenderedSections());
-        line(out, "totalSections", renderer.getTotalSections());
-        line(out, "lastViewDistance", renderer.getLastViewDistance());
+        SectionRenderDispatcher dispatcher = McCompat.sectionDispatcher(renderer);
+        line(out, "sectionStatistics", String.valueOf(McCompat.invokeValue(renderer, "getSectionStatistics")));
+        line(out, "entityStatistics", String.valueOf(McCompat.invokeValue(renderer, "getEntityStatistics")));
+        line(out, "renderedSections", String.valueOf(McCompat.invokeValue(renderer, "countRenderedSections")));
+        line(out, "totalSections", String.valueOf(McCompat.invokeValue(renderer, "getTotalSections")));
+        line(out, "lastViewDistance", String.valueOf(McCompat.invokeValue(renderer, "getLastViewDistance")));
         line(out, "allSectionsRendered", renderer.hasRenderedAllSections());
-        line(out, "visibleSections", renderer.getVisibleSections().size());
-        line(out, "sectionDispatcher.stats", renderer.getSectionRenderDispatcher().getStats());
-        line(out, "sectionDispatcher.compileQueue", renderer.getSectionRenderDispatcher().getCompileQueueSize());
-        line(out, "sectionDispatcher.freeBuffers", renderer.getSectionRenderDispatcher().getFreeBufferCount());
-        line(out, "translucentTarget", renderer.getTranslucentTarget() != null);
-        line(out, "itemEntityTarget", renderer.getItemEntityTarget() != null);
-        line(out, "particlesTarget", renderer.getParticlesTarget() != null);
-        line(out, "weatherTarget", renderer.getWeatherTarget() != null);
-        line(out, "cloudsTarget", renderer.getCloudsTarget() != null);
+        line(out, "visibleSections", McCompat.visibleSections(renderer).size());
+        line(out, "sectionDispatcher.stats", dispatcher == null ? "<missing>" : dispatcher.getStats());
+        line(out, "sectionDispatcher.compileQueue", dispatcher == null ? "<missing>" : dispatcher.getCompileQueueSize());
+        line(out, "sectionDispatcher.freeBuffers", dispatcher == null ? "<missing>" : dispatcher.getFreeBufferCount());
+        line(out, "translucentTarget", McCompat.invokeValue(renderer, "getTranslucentTarget", "translucentTarget") != null);
+        line(out, "itemEntityTarget", McCompat.invokeValue(renderer, "getItemEntityTarget", "itemEntityTarget") != null);
+        line(out, "particlesTarget", McCompat.invokeValue(renderer, "getParticlesTarget", "particlesTarget") != null);
+        line(out, "weatherTarget", McCompat.invokeValue(renderer, "getWeatherTarget", "weatherTarget") != null);
+        line(out, "cloudsTarget", McCompat.invokeValue(renderer, "getCloudsTarget", "cloudsTarget") != null);
         line(out, "lastCameraSection", readField(renderer, "lastCameraSectionX") + ", " + readField(renderer, "lastCameraSectionY") + ", " + readField(renderer, "lastCameraSectionZ"));
         line(out, "prevCameraPos", readField(renderer, "prevCamX") + ", " + readField(renderer, "prevCamY") + ", " + readField(renderer, "prevCamZ"));
         line(out, "prevCameraRot", readField(renderer, "prevCamRotX") + ", " + readField(renderer, "prevCamRotY"));
-
-        SectionOcclusionGraph graph = renderer.getSectionOcclusionGraph();
-        line(out, "occlusionGraph", graph.getClass().getName());
-        line(out, "occlusionOctree", String.valueOf(graph.getOctree()));
+        SectionOcclusionGraph graph = McCompat.sectionOcclusionGraph(renderer);
+        line(out, "occlusionGraph", graph == null ? "<missing>" : graph.getClass().getName());
+        line(out, "occlusionOctree", graph == null ? "<missing>" : String.valueOf(graph.getOctree()));
     }
 
     private static void appendVisibleSections(StringBuilder out, Minecraft mc) {
         section(out, "VisibleSections");
         LevelRenderer renderer = mc.levelRenderer;
-        ObjectArrayList<SectionRenderDispatcher.RenderSection> sections = renderer.getVisibleSections();
+        ObjectArrayList<SectionRenderDispatcher.RenderSection> sections = McCompat.visibleSections(renderer);
         if (sections.isEmpty()) {
             out.append("visibleSections=0\n");
             return;
@@ -276,8 +284,11 @@ public final class RenderReport {
         int[] layerSections = new int[ChunkSectionLayer.values().length];
         long[] layerIndices = new long[ChunkSectionLayer.values().length];
         int[] layerCustomIndex = new int[ChunkSectionLayer.values().length];
+        @SuppressWarnings("unchecked")
+        ArrayList<SectionPressure>[] topSections = new ArrayList[ChunkSectionLayer.values().length];
+        for (int i = 0; i < topSections.length; i++) topSections[i] = new ArrayList<>();
         List<String> anomalies = new ArrayList<>();
-        SectionOcclusionGraph graph = renderer.getSectionOcclusionGraph();
+        SectionOcclusionGraph graph = McCompat.sectionOcclusionGraph(renderer);
 
         for (int i = 0; i < sections.size(); i++) {
             SectionRenderDispatcher.RenderSection section = sections.get(i);
@@ -291,9 +302,12 @@ public final class RenderReport {
             sumDistance += dist;
             bins[Math.min(bins.length - 1, (int)(dist / 32.0))]++;
 
-            if (section.isDirty()) dirty++;
-            if (section.isDirtyFromPlayer()) dirtyPlayer++;
-            if (!section.hasAllNeighbors()) missingNeighbors++;
+            boolean dirtySection = McCompat.sectionDirty(section);
+            boolean dirtyPlayerSection = McCompat.sectionDirtyFromPlayer(section);
+            boolean hasAllNeighbors = McCompat.sectionHasAllNeighbors(section);
+            if (dirtySection) dirty++;
+            if (dirtyPlayerSection) dirtyPlayer++;
+            if (!hasAllNeighbors) missingNeighbors++;
             if (section.hasTranslucentGeometry()) translucent++;
 
             SectionMesh mesh = section.getSectionMesh();
@@ -302,7 +316,7 @@ public final class RenderReport {
             totalBlockEntities += blockEntities;
             if (blockEntities > 0) blockEntitySections++;
 
-            SectionOcclusionGraph.Node node = graph.getNode(section);
+            SectionOcclusionGraph.Node node = graph == null ? null : graph.getNode(section);
             if (node == null) {
                 nodeMissing++;
             } else {
@@ -316,15 +330,16 @@ public final class RenderReport {
                 layerSections[idx]++;
                 layerIndices[idx] += draw.indexCount();
                 if (draw.hasCustomIndexBuffer()) layerCustomIndex[idx]++;
+                pushTopSection(topSections[idx], new SectionPressure(layer, origin, dist, draw.indexCount(), draw.hasCustomIndexBuffer()));
             }
 
-            if (anomalies.size() < 80 && (section.isDirty() || !section.hasAllNeighbors() || blockEntities > 0 || section.hasTranslucentGeometry())) {
+            if (anomalies.size() < 80 && (dirtySection || !hasAllNeighbors || blockEntities > 0 || section.hasTranslucentGeometry())) {
                 anomalies.add(
                         origin.getX() + "," + origin.getY() + "," + origin.getZ()
                                 + " dist=" + fmt(dist)
-                                + " dirty=" + section.isDirty()
-                                + " dirtyPlayer=" + section.isDirtyFromPlayer()
-                                + " neighbors=" + section.hasAllNeighbors()
+                                + " dirty=" + dirtySection
+                                + " dirtyPlayer=" + dirtyPlayerSection
+                                + " neighbors=" + hasAllNeighbors
                                 + " translucent=" + section.hasTranslucentGeometry()
                                 + " blockEntities=" + blockEntities
                                 + " visibility=" + fmt(section.getVisibility(now))
@@ -354,45 +369,141 @@ public final class RenderReport {
         line(out, "distance.bins.160_192", bins[5]);
         line(out, "distance.bins.192_224", bins[6]);
         line(out, "distance.bins.224_plus", bins[7]);
+        lastVisibleLayerSections = layerSections.clone();
+        lastVisibleLayerIndices = layerIndices.clone();
 
         for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
             int idx = layer.ordinal();
             line(out, "layer." + layer + ".sections", layerSections[idx]);
             line(out, "layer." + layer + ".indices", layerIndices[idx]);
             line(out, "layer." + layer + ".customIndex", layerCustomIndex[idx]);
+            line(out, "layer." + layer + ".avgIndicesPerDraw", ratio(layerIndices[idx], layerSections[idx]));
         }
 
         out.append('\n').append("[visibleSectionSample]\n");
         for (String anomaly : anomalies) {
             out.append(anomaly).append('\n');
         }
+
+        out.append('\n').append("[heaviestSectionDraws]\n");
+        for (ChunkSectionLayer layer : ChunkSectionLayer.values()) {
+            ArrayList<SectionPressure> top = topSections[layer.ordinal()];
+            if (top.isEmpty()) continue;
+            out.append("layer=").append(layer).append('\n');
+            for (int i = 0; i < top.size(); i++) {
+                SectionPressure section = top.get(i);
+                out.append(i + 1)
+                        .append(". ")
+                        .append(section.origin.getX()).append(',').append(section.origin.getY()).append(',').append(section.origin.getZ())
+                        .append(" indices=").append(section.indices)
+                        .append(" dist=").append(fmt(section.distance))
+                        .append(" customIndex=").append(section.customIndex)
+                        .append('\n');
+            }
+        }
     }
 
     private static void appendPreparedChunks(StringBuilder out, Minecraft mc) {
         section(out, "PreparedChunkBatches");
-        long started = System.nanoTime();
         try {
-            ChunkSectionsToRender prepared = mc.levelRenderer.prepareChunkRenders(new Matrix4f());
-            long elapsed = System.nanoTime() - started;
-            line(out, "buildTimeNs", elapsed);
-            line(out, "maxIndicesRequired", prepared.maxIndicesRequired());
-            line(out, "chunkSectionInfos", prepared.chunkSectionInfos().length);
+            Matrix4f matrix = new Matrix4f();
+            long cacheHitsBefore = PreparedChunkCacheHits();
+            long cacheMissesBefore = PreparedChunkCacheMisses();
 
-            for (var entry : prepared.drawGroupsPerLayer().entrySet()) {
-                int hashBuckets = entry.getValue().size();
-                int drawLists = 0;
-                int draws = 0;
-                for (List<?> list : entry.getValue().values()) {
-                    drawLists++;
-                    draws += list.size();
-                }
-                line(out, "layer." + entry.getKey() + ".hashBuckets", hashBuckets);
-                line(out, "layer." + entry.getKey() + ".drawLists", drawLists);
-                line(out, "layer." + entry.getKey() + ".draws", draws);
-            }
+            long warmStarted = System.nanoTime();
+            ChunkSectionsToRender warm = mc.levelRenderer.prepareChunkRenders(matrix);
+            long warmElapsed = System.nanoTime() - warmStarted;
+            long cacheHitsAfterWarm = PreparedChunkCacheHits();
+            long cacheMissesAfterWarm = PreparedChunkCacheMisses();
+
+            PreparedChunkCache.clear();
+
+            long coldStarted = System.nanoTime();
+            ChunkSectionsToRender cold = mc.levelRenderer.prepareChunkRenders(matrix);
+            long coldElapsed = System.nanoTime() - coldStarted;
+            long cacheHitsAfterCold = PreparedChunkCacheHits();
+            long cacheMissesAfterCold = PreparedChunkCacheMisses();
+
+            long hotStarted = System.nanoTime();
+            ChunkSectionsToRender hot = mc.levelRenderer.prepareChunkRenders(matrix);
+            long hotElapsed = System.nanoTime() - hotStarted;
+            long cacheHitsAfterHot = PreparedChunkCacheHits();
+            long cacheMissesAfterHot = PreparedChunkCacheMisses();
+
+            line(out, "warmTimeNs", warmElapsed);
+            line(out, "coldTimeNs", coldElapsed);
+            line(out, "hotTimeNs", hotElapsed);
+            line(out, "coldVsHotSpeedup", ratio(coldElapsed, hotElapsed));
+            line(out, "warmUsedCache", cacheHitsAfterWarm > cacheHitsBefore);
+            line(out, "warmCacheHitDelta", cacheHitsAfterWarm - cacheHitsBefore);
+            line(out, "warmCacheMissDelta", cacheMissesAfterWarm - cacheMissesBefore);
+            line(out, "coldCacheHitDelta", cacheHitsAfterCold - cacheHitsAfterWarm);
+            line(out, "coldCacheMissDelta", cacheMissesAfterCold - cacheMissesAfterWarm);
+            line(out, "hotCacheHitDelta", cacheHitsAfterHot - cacheHitsAfterCold);
+            line(out, "hotCacheMissDelta", cacheMissesAfterHot - cacheMissesAfterCold);
+
+            appendPreparedDetails(out, "warm", warm == null ? hot : warm);
+            appendPreparedDetails(out, "cold", cold);
+            appendPreparedDetails(out, "hot", hot);
+            appendPreparedHotColdDiff(out, cold, hot);
         } catch (Throwable t) {
             line(out, "prepareChunkRenders.error", t.getClass().getName() + ": " + t.getMessage());
         }
+    }
+
+    private static void appendPreparedDetails(StringBuilder out, String prefix, ChunkSectionsToRender prepared) {
+        if (prepared == null) {
+            line(out, prefix + ".preparedNull", true);
+            return;
+        }
+
+        line(out, prefix + ".maxIndicesRequired", prepared.maxIndicesRequired());
+        line(out, prefix + ".chunkSectionInfos", prepared.chunkSectionInfos().length);
+
+        int totalHashBuckets = 0;
+        int totalDrawLists = 0;
+        int totalDraws = 0;
+        int maxListSize = 0;
+
+        for (var entry : prepared.drawGroupsPerLayer().entrySet()) {
+            int hashBuckets = entry.getValue().size();
+            int drawLists = 0;
+            int draws = 0;
+            int maxLayerList = 0;
+            for (List<?> list : entry.getValue().values()) {
+                drawLists++;
+                draws += list.size();
+                maxLayerList = Math.max(maxLayerList, list.size());
+            }
+            totalHashBuckets += hashBuckets;
+            totalDrawLists += drawLists;
+            totalDraws += draws;
+            maxListSize = Math.max(maxListSize, maxLayerList);
+            int layerIndex = entry.getKey().ordinal();
+            int visibleSections = layerIndex < lastVisibleLayerSections.length ? lastVisibleLayerSections[layerIndex] : -1;
+            long visibleIndices = layerIndex < lastVisibleLayerIndices.length ? lastVisibleLayerIndices[layerIndex] : -1L;
+            line(out, prefix + ".layer." + entry.getKey() + ".hashBuckets", hashBuckets);
+            line(out, prefix + ".layer." + entry.getKey() + ".drawLists", drawLists);
+            line(out, prefix + ".layer." + entry.getKey() + ".draws", draws);
+            line(out, prefix + ".layer." + entry.getKey() + ".avgDrawsPerList", ratio(draws, drawLists));
+            line(out, prefix + ".layer." + entry.getKey() + ".maxListSize", maxLayerList);
+            line(out, prefix + ".layer." + entry.getKey() + ".visibleSections", visibleSections);
+            line(out, prefix + ".layer." + entry.getKey() + ".submittedVsVisible", ratio(draws, visibleSections));
+            line(out, prefix + ".layer." + entry.getKey() + ".avgIndicesPerVisibleDraw", ratio(visibleIndices, visibleSections));
+        }
+
+        line(out, prefix + ".totalHashBuckets", totalHashBuckets);
+        line(out, prefix + ".totalDrawLists", totalDrawLists);
+        line(out, prefix + ".totalDraws", totalDraws);
+        line(out, prefix + ".avgDrawsPerList", ratio(totalDraws, totalDrawLists));
+        line(out, prefix + ".maxListSize", maxListSize);
+    }
+
+    private static void appendPreparedHotColdDiff(StringBuilder out, ChunkSectionsToRender cold, ChunkSectionsToRender hot) {
+        if (cold == null || hot == null) return;
+        line(out, "coldHot.sameSectionInfos", cold.chunkSectionInfos().length == hot.chunkSectionInfos().length);
+        line(out, "coldHot.sameMaxIndicesRequired", cold.maxIndicesRequired() == hot.maxIndicesRequired());
+        line(out, "coldHot.sameLayerKeyCount", cold.drawGroupsPerLayer().size() == hot.drawGroupsPerLayer().size());
     }
 
     private static void appendHookPressure(StringBuilder out) {
@@ -412,9 +523,18 @@ public final class RenderReport {
         long lightEligible = readStaticCount(Cuts.class, "lightTrimEligible");
         long lightNearRejected = readStaticCount(Cuts.class, "lightTrimRejectedNear");
         long fluidCalls = readStaticCount(Cuts.class, "fluidLightCalls");
+        long fluidEligible = readStaticCount(Cuts.class, "fluidLightEligible");
+        long fluidRejectedFar = readStaticCount(Cuts.class, "fluidLightRejectedFar");
+        long fluidSuppressedCalls = readStaticCount(Cuts.class, "fluidLightSuppressedCalls");
         long resortChecks = readStaticCount(Cuts.class, "translucencyResortChecks");
         long resortSkips = readStaticCount(Cuts.class, "translucencyResortSkips");
         long resortSuppressedChecks = readStaticCount(Cuts.class, "translucencyResortSuppressedChecks");
+        long cutoutLeafChecks = readStaticCount(Cuts.class, "cutoutLeafChecks");
+        long cutoutLeafForcedOpaque = readStaticCount(Cuts.class, "cutoutLeafForcedOpaque");
+        long cutoutLeafVanillaOpaque = readStaticCount(Cuts.class, "cutoutLeafVanillaOpaque");
+        long cutoutAggPasses = readStaticCount(Cuts.class, "cutoutAggPasses");
+        long cutoutAggListsBefore = readStaticCount(Cuts.class, "cutoutAggListsBefore");
+        long cutoutAggListsAfter = readStaticCount(Cuts.class, "cutoutAggListsAfter");
 
         line(out, "entityCull.checks", entityChecks);
         line(out, "entityCull.skips", entitySkips);
@@ -431,14 +551,25 @@ public final class RenderReport {
         line(out, "lightTrim.eligible", lightEligible);
         line(out, "lightTrim.nearRejected", lightNearRejected);
         line(out, "fluidLight.calls", fluidCalls);
+        line(out, "fluidLight.eligible", fluidEligible);
+        line(out, "fluidLight.rejectedFar", fluidRejectedFar);
+        line(out, "fluidLight.suppressedCalls", fluidSuppressedCalls);
         line(out, "translucencyResort.checks", resortChecks);
         line(out, "translucencyResort.skips", resortSkips);
         line(out, "translucencyResort.suppressedChecks", resortSuppressedChecks);
+        line(out, "cutoutLeaf.checks", cutoutLeafChecks);
+        line(out, "cutoutLeaf.forcedOpaque", cutoutLeafForcedOpaque);
+        line(out, "cutoutLeaf.vanillaOpaque", cutoutLeafVanillaOpaque);
+        line(out, "cutoutAgg.passes", cutoutAggPasses);
+        line(out, "cutoutAgg.listsBefore", cutoutAggListsBefore);
+        line(out, "cutoutAgg.listsAfter", cutoutAggListsAfter);
         line(out, "chunkAo.skipRate", percent(aoSkips, aoChecks));
         line(out, "layerTrim.skipRate", percent(layerSkips, layerChecks));
         line(out, "terrainCull.skipRate", percent(terrainSkips, terrainChecks));
         line(out, "lightTrim.eligibleRate", percent(lightEligible, lightCalls));
+        line(out, "fluidLight.eligibleRate", percent(fluidEligible, fluidCalls));
         line(out, "translucencyResort.skipRate", percent(resortSkips, resortChecks));
+        line(out, "cutoutLeaf.forceRate", percent(cutoutLeafForcedOpaque, cutoutLeafChecks));
     }
 
     private static String renderMods() {
@@ -478,6 +609,25 @@ public final class RenderReport {
         }
     }
 
+    private static long PreparedChunkCacheHits() {
+        return readStaticLong(PreparedChunkCache.class, "hits");
+    }
+
+    private static long PreparedChunkCacheMisses() {
+        return readStaticLong(PreparedChunkCache.class, "misses");
+    }
+
+    private static long readStaticLong(Class<?> owner, String name) {
+        try {
+            Field field = owner.getDeclaredField(name);
+            field.setAccessible(true);
+            Object value = field.get(null);
+            return value instanceof Number number ? number.longValue() : -1L;
+        } catch (ReflectiveOperationException ignored) {
+            return -1L;
+        }
+    }
+
     private static Object safeOption(SupplierEx supplier) {
         try {
             return supplier.get();
@@ -505,6 +655,40 @@ public final class RenderReport {
     private static String percent(long part, long total) {
         if (part < 0 || total <= 0) return "n/a";
         return fmt((double)part * 100.0 / (double)total) + "%";
+    }
+
+    private static String ratio(long a, long b) {
+        if (a < 0 || b <= 0) return "n/a";
+        return fmt((double)a / (double)b);
+    }
+
+    private static void pushTopSection(List<SectionPressure> top, SectionPressure candidate) {
+        int insertAt = top.size();
+        for (int i = 0; i < top.size(); i++) {
+            if (candidate.indices > top.get(i).indices) {
+                insertAt = i;
+                break;
+            }
+        }
+        if (insertAt < 5) {
+            top.add(insertAt, candidate);
+            if (top.size() > 5) top.remove(5);
+        } else if (top.size() < 5) {
+            top.add(candidate);
+        }
+    }
+
+    private record SectionPressure(ChunkSectionLayer layer, BlockPos origin, double distance, int indices, boolean customIndex) {
+    }
+
+    private static int unlimitedFramerateCutoff(Minecraft mc) {
+        Object value = readField(mc.options, "UNLIMITED_FRAMERATE_CUTOFF");
+        return value instanceof Number number ? number.intValue() : -1;
+    }
+
+    private static String describeFramerateLimit(int value, int unlimitedCutoff) {
+        if (unlimitedCutoff >= 0 && value >= unlimitedCutoff) return "UNLIMITED";
+        return "LIMITED(" + value + ")";
     }
 
     @FunctionalInterface

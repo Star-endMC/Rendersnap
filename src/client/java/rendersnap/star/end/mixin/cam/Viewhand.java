@@ -2,7 +2,7 @@ package rendersnap.star.end.mixin.cam;
 
 import rendersnap.star.end.client.render.zoom.Zoom;
 import net.minecraft.client.renderer.GameRenderer;
-//? if >=26.2-snapshot-8 {
+//? if >=26.2 {
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import org.joml.Matrix4fc;
 //?}
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public abstract class Viewhand {
 
-    //? if >=26.2-snapshot-8 {
+    //? if >=26.2 {
     @Inject(method = "renderItemInHand", at = @At("HEAD"), cancellable = true)
     private void hideHand(CameraRenderState cameraState, float deltaPartialTick, Matrix4fc modelViewMatrix, CallbackInfo ci) {
         if (Zoom.isZooming()) {
