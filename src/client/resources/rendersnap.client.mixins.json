@@ -1,0 +1,25 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "rendersnap.star.end.mixin",
+  "compatibilityLevel": "JAVA_${java_version}",
+  "client": [
+    "cam.PlrView",
+    "cam.Viewhand",
+    "cam.FogPass",
+    "client.GraphicsPresetGuardMixin",
+    "ui.OptsBtn",
+    "world.ChunkGraph",
+    "world.ChunkWorkerLimitMixin",
+    "world.GameModeStartGuardMixin",
+    "world.ItemInHandStartGuardMixin",
+    "world.ChunkShade",
+    "entity.MobRender",
+    "entity.ShadowStateMixin",
+    "ui.Wheel",
+    "scene.RainBits"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
