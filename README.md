@@ -27,4 +27,4 @@ You may build the mod from source by:
 3. Get the `.jar` file from `build/libs` in any version in the `versions` directory
 
 ## License
-Rendersnap is currently licensed under the Star-end License.
+Rendersnap is currently licensed under the CC BY-NC-SA 4.0.
