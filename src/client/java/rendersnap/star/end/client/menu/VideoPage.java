@@ -12,7 +12,6 @@ import net.minecraft.client.TextureFilteringMethod;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
@@ -155,11 +154,7 @@ public final class VideoPage extends OptionsSubScreen {
             if (next > range.maxInclusive()) return false;
             if (next < range.minInclusive()) return false;
 
-            AbstractWidget widget = this.list.findOption(gui);
-            if (!(widget instanceof CycleButton<?> cycle)) return false;
-
             gui.set(next);
-            ((CycleButton<Integer>) cycle).setValue(next);
             this.list.setScrollAmount(0.0);
             return true;
         }
