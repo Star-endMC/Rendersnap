@@ -3,12 +3,10 @@ package rendersnap.star.end.client.render;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
-import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
@@ -111,13 +109,9 @@ public final class Cuts {
         forwardZ = FORWARD.z;
     }
 
-    public static boolean shouldCullEntity(Entity e, Frustum frustum, double camX, double camY, double camZ) {
+    public static boolean shouldCullEntity(Entity e) {
         ENTITY_CHECKS.increment();
         if (!Compatibility.allowsVanillaHooks() || !entityCulling || warming() || e == null || e instanceof Player || e.isPassenger()) return false;
-        if (frustum == null || e.distanceToSqr(camX, camY, camZ) < 64.0 * 64.0) return false;
-
-        AABB box = e.getBoundingBox();
-        if (!frustum.isVisible(box)) return false;
         Minecraft mc = Minecraft.getInstance();
         if (mc.levelRenderer == null || mc.levelRenderer.isSectionCompiledAndVisible(e.blockPosition())) return false;
 

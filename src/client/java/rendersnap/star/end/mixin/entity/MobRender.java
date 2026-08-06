@@ -14,7 +14,7 @@ public abstract class MobRender {
 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private <E extends Entity> void skipHiddenMob(E entity, Frustum culler, double camX, double camY, double camZ, CallbackInfoReturnable<Boolean> cir) {
-        if (Cuts.shouldCullEntity(entity, culler, camX, camY, camZ)) {
+        if (Cuts.shouldCullEntity(entity)) {
             cir.setReturnValue(false);
         }
     }

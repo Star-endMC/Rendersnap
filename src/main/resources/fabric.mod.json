@@ -9,10 +9,10 @@
 		"Nightis-The-Nightmare"
 	],
 	"contact": {
-		"license": "StarEnd License 2.1.3",
+		"license": "CC BY-NC-SA 4.0",
 		"sources": "https://github.com/Star-endMC/Rendersnap"
 	},
-	"license": "StarEnd License 2.1.3",
+	"license": "CC BY-NC-SA 4.0",
 	"icon": "assets/rendersnap/icon.png",
 	"environment": "client",
 	"entrypoints": {
