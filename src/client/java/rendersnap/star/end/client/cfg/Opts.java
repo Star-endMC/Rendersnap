@@ -33,7 +33,6 @@ public final class Opts {
     public static final boolean DEFAULT_HIDE_WEATHER = false;
     public static final boolean DEFAULT_CHUNK_PACING = false;
     public static final int DEFAULT_CHUNK_WORKER_LIMIT = 2;
-    public static final int DEFAULT_GRAPHICS_PRESET_DISTANCE_CAP = 16;
 
     public static boolean showFpsOverlay = DEFAULT_SHOW_FPS_OVERLAY;
     public static int fpsOverlayX = DEFAULT_FPS_OVERLAY_X;
@@ -49,7 +48,6 @@ public final class Opts {
     public static boolean hideWeather = DEFAULT_HIDE_WEATHER;
     public static boolean chunkPacing = DEFAULT_CHUNK_PACING;
     public static int chunkWorkerLimit = DEFAULT_CHUNK_WORKER_LIMIT;
-    public static int graphicsPresetDistanceCap = DEFAULT_GRAPHICS_PRESET_DISTANCE_CAP;
     public static int chunkUpdateMode = -1;
 
     private Opts() {
@@ -96,7 +94,6 @@ public final class Opts {
         chunkPacing = bool(p, "chunkPacing", bool(p, "multiRender", chunkPacing));
         chunkWorkerLimit = Mth.clamp(intV(p, "chunkWorkerLimit", chunkWorkerLimit), 2, 8);
         chunkUpdateMode = Mth.clamp(intV(p, "chunkUpdateMode", chunkUpdateMode), -1, 2);
-        graphicsPresetDistanceCap = Mth.clamp(intV(p, "graphicsPresetDistanceCap", graphicsPresetDistanceCap), 0, 32);
     }
 
     private static void put(Properties p) {
@@ -115,7 +112,6 @@ public final class Opts {
         p.setProperty("chunkPacing", String.valueOf(chunkPacing));
         p.setProperty("chunkWorkerLimit", String.valueOf(chunkWorkerLimit));
         p.setProperty("chunkUpdateMode", String.valueOf(chunkUpdateMode));
-        p.setProperty("graphicsPresetDistanceCap", String.valueOf(graphicsPresetDistanceCap));
     }
 
     private static Path configPath() {

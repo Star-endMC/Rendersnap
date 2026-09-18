@@ -1,7 +1,7 @@
 package rendersnap.star.end.mixin.cam;
 
 import rendersnap.star.end.client.render.zoom.Zoom;
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.minecraft.client.Camera;
 //?} else {
 /*import net.minecraft.client.Camera;
@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-//? if >=26.1.2 {
+//? if >=26.1 {
 @Mixin(Camera.class)
 //?} else {
 /*@Mixin(GameRenderer.class)
 *///?}
 public abstract class PlrView {
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)
     private void zoomFov(float partialTicks, CallbackInfoReturnable<Float> cir) {
         cir.setReturnValue(Zoom.modifyFov(cir.getReturnValue()));

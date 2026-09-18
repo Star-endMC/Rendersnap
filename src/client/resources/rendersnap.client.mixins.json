@@ -5,19 +5,18 @@
   "compatibilityLevel": "JAVA_${java_version}",
   "client": [
     "cam.PlrView",
-    "cam.Viewhand",
-    "cam.FogPass",
-    "client.GraphicsPresetGuardMixin",
-    "ui.OptsBtn",
-    "world.ChunkGraph",
-    "world.ChunkWorkerLimitMixin",
-    "world.GameModeStartGuardMixin",
-    "world.ItemInHandStartGuardMixin",
-    "world.ChunkShade",
-    "entity.MobRender",
-    "entity.ShadowStateMixin",
+    "cam.VH",
+    "cam.FP",
+    "ui.OB",
+    "world.CG",
+    "world.CWLM",
+    "world.GMSG",
+    "world.IHSGM",
+    "world.CS",
+    "entity.MR",
+    "entity.SSM",
     "ui.Wheel",
-    "scene.RainBits"
+    "scene.RB"
   ],
   "injectors": {
     "defaultRequire": 1

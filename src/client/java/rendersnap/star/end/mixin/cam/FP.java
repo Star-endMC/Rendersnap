@@ -4,7 +4,7 @@ import rendersnap.star.end.client.render.Fog;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.multiplayer.ClientLevel;
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.minecraft.client.renderer.fog.FogData;
 import net.minecraft.client.renderer.fog.FogRenderer;
 //?} else {
@@ -16,9 +16,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(FogRenderer.class)
-public abstract class FogPass {
+public abstract class FP {
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     @Inject(method = "setupFog", at = @At("RETURN"))
     private void pullFog(
             Camera camera,

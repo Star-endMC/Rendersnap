@@ -18,14 +18,14 @@ import rendersnap.star.end.client.menu.VideoPage;
 import java.util.function.Supplier;
 
 @Mixin(OptionsScreen.class)
-public abstract class OptsBtn extends Screen {
+public abstract class OB extends Screen {
     @Shadow @Final
     private static Component VIDEO;
 
     @Shadow @Final
     private Options options;
 
-    private OptsBtn(Component title) {
+    private OB(Component title) {
         super(title);
     }
 

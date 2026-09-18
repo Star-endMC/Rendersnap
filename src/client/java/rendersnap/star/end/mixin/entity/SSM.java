@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import rendersnap.star.end.client.render.ShadowReuse;
 
 @Mixin(EntityRenderer.class)
-public abstract class ShadowStateMixin {
+public abstract class SSM {
     @Unique private Entity rendersnap$entity;
 
     @Inject(

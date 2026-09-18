@@ -1,6 +1,6 @@
 package rendersnap.star.end.client.render;
 
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.minecraft.client.renderer.fog.FogData;
 //?}
 
@@ -15,7 +15,7 @@ public final class Fog {
         occlusionEnabled = on;
     }
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     public static void readVanillaFog(FogData fogData) {
         if (!occlusionEnabled || fogData == null) {
             return;

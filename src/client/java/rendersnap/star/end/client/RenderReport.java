@@ -34,7 +34,11 @@ public final class RenderReport {
         if (key != null) return;
         key = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.rendersnap.render_report",
-                InputConstants.Type.KEYSYM,
+                //? if >=26.3 {
+                InputConstants.Type.KEYBOARD,
+                //?} else {
+                /*InputConstants.Type.KEYSYM,
+                *///?}
                 InputConstants.KEY_F8,
                 new KeyMapping.Category(Identifier.fromNamespaceAndPath(Rendersnap.MOD_ID, "controls"))
         ));
@@ -79,7 +83,6 @@ public final class RenderReport {
         line(out, "option.chunkPacing", Opts.chunkPacing);
         line(out, "option.chunkWorkerLimit", Opts.chunkWorkerLimit);
         line(out, "chunk.activeWorkers", ChunkWorkerPool.activeWorkers());
-        line(out, "option.graphicsPresetDistanceCap", Opts.graphicsPresetDistanceCap);
         line(out, "option.fastLaunch", Opts.fastLaunch);
         line(out, "option.chunkShadeTrim", Opts.chunkShadeTrim);
         line(out, "option.farLayerTrim", Opts.farLayerTrim);
@@ -87,7 +90,11 @@ public final class RenderReport {
         line(out, "option.behindCamera", Opts.behindCamMode);
         line(out, "option.hideWeather", Opts.hideWeather);
 
+        //? if >=26.2 {
         SectionRenderDispatcher dispatcher = mc.levelRenderer.sectionRenderDispatcher();
+        //?} else {
+        /*SectionRenderDispatcher dispatcher = mc.levelRenderer.getSectionRenderDispatcher();
+        *///?}
         line(out, "chunk.compileQueue", dispatcher.getCompileQueueSize());
         line(out, "chunk.freeBuffers", dispatcher.getFreeBufferCount());
         line(out, "chunk.dispatcher", dispatcher.getStats());

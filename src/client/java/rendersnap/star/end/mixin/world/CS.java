@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import rendersnap.star.end.client.render.Cuts;
 
 @Mixin(ModelBlockRenderer.class)
-public abstract class ChunkShade {
+public abstract class CS {
 
     @Redirect(
             method = "tesselateBlock(Lnet/minecraft/client/renderer/block/BlockQuadOutput;FFFLnet/minecraft/client/renderer/block/BlockAndTintGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/client/renderer/block/dispatch/BlockStateModel;J)V",

@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.chunk.ChunkSectionLayer;
 import net.minecraft.client.renderer.chunk.SectionRenderDispatcher;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -113,7 +114,11 @@ public final class Cuts {
         ENTITY_CHECKS.increment();
         if (!Compatibility.allowsVanillaHooks() || !entityCulling || warming() || e == null || e instanceof Player || e.isPassenger()) return false;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.levelRenderer == null || mc.levelRenderer.isSectionCompiledAndVisible(e.blockPosition())) return false;
+        //? if >=26.3 {
+        if (mc.levelRenderer == null || mc.levelRenderer.isSectionCompiledAndVisible(e.blockPosition(), Util.getMillis())) return false;
+        //?} else {
+        /*if (mc.levelRenderer == null || mc.levelRenderer.isSectionCompiledAndVisible(e.blockPosition())) return false;
+        *///?}
 
         ENTITY_CULLED.increment();
         return true;

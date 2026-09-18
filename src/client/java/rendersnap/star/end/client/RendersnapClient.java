@@ -7,7 +7,7 @@ import rendersnap.star.end.client.render.Cuts;
 import rendersnap.star.end.client.render.gpu.Gpu;
 import rendersnap.star.end.client.render.zoom.Zoom;
 import net.fabricmc.api.ClientModInitializer;
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
@@ -16,7 +16,7 @@ import net.minecraft.resources.Identifier;
 //?}
 
 public final class RendersnapClient implements ClientModInitializer {
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     private static final Identifier FPS_HUD =
             Identifier.fromNamespaceAndPath(Rendersnap.MOD_ID, "fps_overlay");
     //?}
@@ -29,7 +29,7 @@ public final class RendersnapClient implements ClientModInitializer {
             Opts.save();
         }
         readOptions();
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         Zoom.registerKeybind();
         RenderReport.registerKeybind();
         hud();
@@ -38,7 +38,7 @@ public final class RendersnapClient implements ClientModInitializer {
         //?}
     }
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     private static void hud() {
         HudElementRegistry.attachElementAfter(
                 VanillaHudElements.MISC_OVERLAYS,

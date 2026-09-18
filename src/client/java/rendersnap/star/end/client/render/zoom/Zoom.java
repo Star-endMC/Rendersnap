@@ -37,7 +37,11 @@ public final class Zoom {
         KeyMapping.Category category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(Rendersnap.MOD_ID, "controls"));
         key = KeyMappingHelper.registerKeyMapping(new KeyMapping(
                 "key.rendersnap.zoom",
-                InputConstants.Type.KEYSYM,
+                //? if >=26.3 {
+                InputConstants.Type.KEYBOARD,
+                //?} else {
+                /*InputConstants.Type.KEYSYM,
+                *///?}
                 InputConstants.KEY_C,
                 category
         ));

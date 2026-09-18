@@ -6,7 +6,7 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.minecraft.client.TextureFilteringMethod;
 //?}
 import net.minecraft.client.gui.components.AbstractSliderButton;
@@ -27,7 +27,7 @@ public final class VideoPage extends OptionsSubScreen {
     private static final Component SNAP = Component.translatable("rendersnap.group.snap");
 
     private final int mips0;
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     private final int aniso0;
     private final TextureFilteringMethod filter0;
     //?}
@@ -35,7 +35,7 @@ public final class VideoPage extends OptionsSubScreen {
     public VideoPage(Screen last, Minecraft mc, Options opts) {
         super(last, opts, TITLE);
         this.mips0 = opts.mipmapLevels().get();
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         this.aniso0 = opts.maxAnisotropyBit().get();
         this.filter0 = opts.textureFiltering().get();
         //?}
@@ -43,10 +43,10 @@ public final class VideoPage extends OptionsSubScreen {
 
     @Override
     protected void addOptions() {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         this.list.addHeader(DISPLAY);
         this.list.addBig(this.fullscreen());
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         this.list.addSmall(new OptionInstance[]{
                 this.options.framerateLimit(), this.options.enableVsync(), this.options.inactivityFpsLimit(),
                 this.options.guiScale(), this.options.fullscreen(), this.options.exclusiveFullscreen(), this.options.gamma()
@@ -104,7 +104,7 @@ public final class VideoPage extends OptionsSubScreen {
 
     @Override
     public void tick() {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         if (this.list.findOption(this.options.maxAnisotropyBit()) instanceof AbstractSliderButton slider) {
             slider.active = this.options.textureFiltering().get() == TextureFilteringMethod.ANISOTROPIC;
         }
@@ -120,7 +120,7 @@ public final class VideoPage extends OptionsSubScreen {
 
     @Override
     public void removed() {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         if (this.options.mipmapLevels().get() != this.mips0
                 || this.options.maxAnisotropyBit().get() != this.aniso0
                 || this.options.textureFiltering().get() != this.filter0) {
@@ -138,7 +138,7 @@ public final class VideoPage extends OptionsSubScreen {
 
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         if (!this.minecraft.hasControlDown()) {
         //?} else {
         /*if (!Screen.hasControlDown()) {

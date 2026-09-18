@@ -3,7 +3,7 @@ package rendersnap.star.end.client.hud;
 import rendersnap.star.end.client.cfg.Opts;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-//? if >=26.1.2 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
@@ -12,7 +12,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 public final class FpsHud {
     private FpsHud() {}
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     public static void draw(GuiGraphicsExtractor g, DeltaTracker tick) {
         draw0(g, tick);
     }
@@ -22,7 +22,7 @@ public final class FpsHud {
     }
     *///?}
 
-    //? if >=26.1.2 {
+    //? if >=26.1 {
     private static void draw0(GuiGraphicsExtractor g, DeltaTracker tick) {
     //?} else {
     /*private static void draw0(GuiGraphics g, DeltaTracker tick) {
@@ -39,7 +39,7 @@ public final class FpsHud {
         int w = mc.font.width(txt);
 
         g.fill(x - 3, y - 2, x + w + 4, y + 10, 0x90000000);
-        //? if >=26.1.2 {
+        //? if >=26.1 {
         g.text(mc.font, txt, x, y, col(fps), false);
         //?} else {
         /*g.drawString(mc.font, txt, x, y, col(fps), false);

@@ -10,9 +10,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import rendersnap.star.end.client.ChunkWorkerPool;
 
 @Mixin(LevelRenderer.class)
-public abstract class ChunkWorkerLimitMixin {
+public abstract class CWLM {
     @Redirect(
+            //? if >=26.2 {
             method = "invalidateCompiledGeometry",
+            //?} else {
+            /*method = "allChanged",
+            *///?}
             at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;backgroundExecutor()Lnet/minecraft/TracingExecutor;")
     )
     private TracingExecutor rendersnap$chunkWorkerExecutor() {

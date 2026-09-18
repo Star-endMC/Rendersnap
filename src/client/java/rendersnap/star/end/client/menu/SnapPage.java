@@ -4,8 +4,6 @@ import com.mojang.serialization.Codec;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import net.minecraft.client.Options;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
@@ -13,7 +11,6 @@ import net.minecraft.network.chat.Component;
 import rendersnap.star.end.client.ChunkUpdatePacing;
 import rendersnap.star.end.client.Compatibility;
 import rendersnap.star.end.client.McCompat;
-import rendersnap.star.end.client.PerformancePreset;
 import rendersnap.star.end.client.cfg.Opts;
 import rendersnap.star.end.client.render.Cuts;
 import rendersnap.star.end.client.render.zoom.Zoom;
@@ -45,12 +42,6 @@ public final class SnapPage extends OptionsSubScreen {
     }
 
     private void optimization() {
-        this.list.addHeader(Component.translatable("rendersnap.group.preset"));
-        this.list.addBig(Button.builder(Component.translatable("rendersnap.action.apply_balanced"), button -> applyBalanced())
-                .tooltip(Tooltip.create(Component.translatable("rendersnap.action.apply_balanced.tooltip")))
-                .bounds(0, 0, 310, 20)
-                .build());
-
         this.list.addHeader(Component.translatable("rendersnap.group.culling"));
         this.list.addBig(bool("rendersnap.option.entities", Opts.entityCulling, on -> {
             Opts.entityCulling = on;
@@ -63,7 +54,6 @@ public final class SnapPage extends OptionsSubScreen {
         }));
 
         this.list.addHeader(Component.translatable("rendersnap.group.chunks"));
-        this.list.addBig(presetDistanceCap());
         this.list.addBig(bool("rendersnap.option.fast_launch", Opts.fastLaunch, on -> {
             Opts.fastLaunch = on;
             if (!on) Cuts.stopWarmup();
@@ -115,17 +105,6 @@ public final class SnapPage extends OptionsSubScreen {
         this.list.addBig(zoomEase());
     }
 
-    private void applyBalanced() {
-        int changed = PerformancePreset.apply(this.options);
-        Opts.save();
-        SystemToast.addOrUpdate(
-                McCompat.toastManager(this.minecraft),
-                RELOAD_TOAST,
-                Component.translatable("rendersnap.toast.preset.title"),
-                Component.translatable("rendersnap.toast.preset.body", changed)
-        );
-    }
-
     private OptionInstance<Integer> behindCam() {
         return new OptionInstance<>(
                 "rendersnap.option.behind_cam",
@@ -136,22 +115,6 @@ public final class SnapPage extends OptionsSubScreen {
                 mode -> {
                     Opts.behindCamMode = mode;
                     Cuts.setBehindCamMode(mode);
-                    Opts.save();
-                }
-        );
-    }
-
-    private OptionInstance<Integer> presetDistanceCap() {
-        return new OptionInstance<>(
-                "rendersnap.option.preset_distance_cap",
-                tip("rendersnap.option.preset_distance_cap.tooltip"),
-                (caption, value) -> value == 0
-                        ? Component.translatable("rendersnap.option.preset_distance_cap.off")
-                        : Component.translatable("rendersnap.option.preset_distance_cap.value", value),
-                new OptionInstance.IntRange(0, 32),
-                Opts.graphicsPresetDistanceCap,
-                value -> {
-                    Opts.graphicsPresetDistanceCap = value;
                     Opts.save();
                 }
         );
