@@ -11,7 +11,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import rendersnap.star.end.client.render.ShadowReuse;
+import rendersnap.star.end.client.render.ShadReuse;
+import rendersnap.star.end.client.cfg.Opts;
+import rendersnap.star.end.client.render.Cuts;
 
 @Mixin(EntityRenderer.class)
 public abstract class SSM {
@@ -27,13 +29,21 @@ public abstract class SSM {
 
     @Inject(method = "extractShadow", at = @At("HEAD"), cancellable = true)
     private void rendersnap$reuseSameTickShadow(EntityRenderState state, Minecraft mc, Level level, CallbackInfo ci) {
-        if (ShadowReuse.restore(this.rendersnap$entity, state, level)) {
+        if (Opts.shadowFix && Cuts.isCameraMovingFast()) {
+            ShadReuse.skippedForFastCamera();
+
+            state.shadowRadius = 0.0f;
+            state.shadowPieces.clear();
+            ci.cancel();
+            return;
+        }
+        if (ShadReuse.restore(this.rendersnap$entity, state, level)) {
             ci.cancel();
         }
     }
 
     @Inject(method = "extractShadow", at = @At("TAIL"))
     private void rendersnap$storeSameTickShadow(EntityRenderState state, Minecraft mc, Level level, CallbackInfo ci) {
-        ShadowReuse.capture(this.rendersnap$entity, state, level);
+        ShadReuse.capture(this.rendersnap$entity, state, level);
     }
 }

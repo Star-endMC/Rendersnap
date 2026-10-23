@@ -7,8 +7,10 @@ import rendersnap.star.end.Rendersnap;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Properties;
 
 public final class Opts {
@@ -20,11 +22,17 @@ public final class Opts {
     public static final int DEFAULT_FPS_OVERLAY_X = 6;
     public static final int DEFAULT_FPS_OVERLAY_Y = 6;
     public static final int DEFAULT_ZOOM_TRANSITION = 2;
+    public static final boolean DEFAULT_ZOOM_CINEMATIC = false;
+    public static final boolean DEFAULT_GENTLE_WORKERS = true;
+    public static final boolean DEFAULT_REBUILD_GUARD = true;
+    public static final boolean DEFAULT_LIGHT_PACING = true;
     public static final boolean DEFAULT_ENTITY_CULLING = true;
     public static final boolean DEFAULT_SHADOW_REUSE = true;
+    public static final boolean DEFAULT_SHADOW_FIX = true;
     public static final boolean DEFAULT_CHUNK_SHADE_TRIM = false;
-    public static final boolean DEFAULT_FAR_LAYER_TRIM = false;
     public static final boolean DEFAULT_FOG_OCCLUSION = false;
+    public static final boolean DEFAULT_CAVE_CULLING = true;
+    public static final boolean DEFAULT_LIQUID_FIX = false;
     public static final int BEHIND_CAM_OFF = 0;
     public static final int BEHIND_CAM_NORMAL = 1;
     public static final int BEHIND_CAM_HIGH = 2;
@@ -32,17 +40,23 @@ public final class Opts {
     public static final boolean DEFAULT_FAST_LAUNCH = true;
     public static final boolean DEFAULT_HIDE_WEATHER = false;
     public static final boolean DEFAULT_CHUNK_PACING = false;
-    public static final int DEFAULT_CHUNK_WORKER_LIMIT = 2;
+    public static final int DEFAULT_CHUNK_WORKER_LIMIT = Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors() - 1));
 
     public static boolean showFpsOverlay = DEFAULT_SHOW_FPS_OVERLAY;
     public static int fpsOverlayX = DEFAULT_FPS_OVERLAY_X;
     public static int fpsOverlayY = DEFAULT_FPS_OVERLAY_Y;
     public static int zoomTransition = DEFAULT_ZOOM_TRANSITION;
+    public static boolean zoomCinematic = DEFAULT_ZOOM_CINEMATIC;
+    public static boolean gentleWorkers = DEFAULT_GENTLE_WORKERS;
+    public static boolean rebuildGuard = DEFAULT_REBUILD_GUARD;
+    public static boolean lightPacing = DEFAULT_LIGHT_PACING;
     public static boolean entityCulling = DEFAULT_ENTITY_CULLING;
     public static boolean shadowReuse = DEFAULT_SHADOW_REUSE;
+    public static boolean shadowFix = DEFAULT_SHADOW_FIX;
     public static boolean chunkShadeTrim = DEFAULT_CHUNK_SHADE_TRIM;
-    public static boolean farLayerTrim = DEFAULT_FAR_LAYER_TRIM;
     public static boolean fogOcclusion = DEFAULT_FOG_OCCLUSION;
+    public static boolean caveCulling = DEFAULT_CAVE_CULLING;
+    public static boolean liquidFix = DEFAULT_LIQUID_FIX;
     public static int behindCamMode = DEFAULT_BEHIND_CAM_MODE;
     public static boolean fastLaunch = DEFAULT_FAST_LAUNCH;
     public static boolean hideWeather = DEFAULT_HIDE_WEATHER;
@@ -58,8 +72,15 @@ public final class Opts {
         put(p);
         try {
             Files.createDirectories(CONFIG_FILE.getParent());
-            try (OutputStream os = Files.newOutputStream(CONFIG_FILE)) {
+
+            Path tmp = CONFIG_FILE.resolveSibling(CONFIG_FILE.getFileName() + ".tmp");
+            try (OutputStream os = Files.newOutputStream(tmp)) {
                 p.store(os, "Rendersnap 26.2");
+            }
+            try {
+                Files.move(tmp, CONFIG_FILE, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, CONFIG_FILE, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
             Rendersnap.LOGGER.warn("Couldn't save rendersnap.properties", e);
@@ -79,14 +100,20 @@ public final class Opts {
         }
 
         showFpsOverlay = bool(p, "showFpsOverlay", showFpsOverlay);
-        fpsOverlayX = intV(p, "fpsOverlayX", fpsOverlayX);
-        fpsOverlayY = intV(p, "fpsOverlayY", fpsOverlayY);
+        fpsOverlayX = Math.max(0, intV(p, "fpsOverlayX", fpsOverlayX));
+        fpsOverlayY = Math.max(0, intV(p, "fpsOverlayY", fpsOverlayY));
         zoomTransition = Mth.clamp(intV(p, "zoomTransition", zoomTransition), 0, 3);
+        zoomCinematic = bool(p, "zoomCinematic", zoomCinematic);
+        gentleWorkers = bool(p, "gentleWorkers", gentleWorkers);
+        rebuildGuard = bool(p, "rebuildGuard", rebuildGuard);
+        lightPacing = bool(p, "lightPacing", lightPacing);
         entityCulling = bool(p, "entityCulling", entityCulling);
         shadowReuse = bool(p, "shadowReuse", shadowReuse);
+        shadowFix = bool(p, "shadowFix", shadowFix);
         chunkShadeTrim = bool(p, "chunkShadeTrim", chunkShadeTrim);
-        farLayerTrim = bool(p, "farLayerTrim", farLayerTrim);
         fogOcclusion = bool(p, "fogOcclusion", fogOcclusion);
+        caveCulling = bool(p, "caveCulling", caveCulling);
+        liquidFix = bool(p, "liquidFix", liquidFix);
         int legacyBehindCam = bool(p, "behindCamDrawCut", false) ? BEHIND_CAM_NORMAL : behindCamMode;
         behindCamMode = Mth.clamp(intV(p, "behindCamMode", legacyBehindCam), BEHIND_CAM_OFF, BEHIND_CAM_HIGH);
         fastLaunch = bool(p, "fastLaunch", fastLaunch);
@@ -101,11 +128,17 @@ public final class Opts {
         p.setProperty("fpsOverlayX", String.valueOf(fpsOverlayX));
         p.setProperty("fpsOverlayY", String.valueOf(fpsOverlayY));
         p.setProperty("zoomTransition", String.valueOf(zoomTransition));
+        p.setProperty("zoomCinematic", String.valueOf(zoomCinematic));
+        p.setProperty("gentleWorkers", String.valueOf(gentleWorkers));
+        p.setProperty("rebuildGuard", String.valueOf(rebuildGuard));
+        p.setProperty("lightPacing", String.valueOf(lightPacing));
         p.setProperty("entityCulling", String.valueOf(entityCulling));
         p.setProperty("shadowReuse", String.valueOf(shadowReuse));
+        p.setProperty("shadowFix", String.valueOf(shadowFix));
         p.setProperty("chunkShadeTrim", String.valueOf(chunkShadeTrim));
-        p.setProperty("farLayerTrim", String.valueOf(farLayerTrim));
         p.setProperty("fogOcclusion", String.valueOf(fogOcclusion));
+        p.setProperty("caveCulling", String.valueOf(caveCulling));
+        p.setProperty("liquidFix", String.valueOf(liquidFix));
         p.setProperty("behindCamMode", String.valueOf(behindCamMode));
         p.setProperty("fastLaunch", String.valueOf(fastLaunch));
         p.setProperty("hideWeather", String.valueOf(hideWeather));

@@ -4,16 +4,17 @@ import net.minecraft.client.Options;
 import net.minecraft.client.PrioritizeChunkUpdates;
 import rendersnap.star.end.client.cfg.Opts;
 
-public final class ChunkUpdatePacing {
+public final class ChunkPace {
     private static final PrioritizeChunkUpdates[] MODES = PrioritizeChunkUpdates.values();
 
-    private ChunkUpdatePacing() {
+    private ChunkPace() {
     }
 
     public static void enable(Options options) {
         PrioritizeChunkUpdates old = options.prioritizeChunkUpdates().get();
-        Opts.chunkUpdateMode = old == PrioritizeChunkUpdates.NONE ? -1 : old.ordinal();
+
         if (old != PrioritizeChunkUpdates.NONE) {
+            Opts.chunkUpdateMode = old.ordinal();
             options.prioritizeChunkUpdates().set(PrioritizeChunkUpdates.NONE);
             options.save();
         }

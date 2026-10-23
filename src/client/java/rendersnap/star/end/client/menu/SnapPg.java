@@ -8,8 +8,9 @@ import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.Component;
-import rendersnap.star.end.client.ChunkUpdatePacing;
-import rendersnap.star.end.client.Compatibility;
+import net.minecraft.ChatFormatting;
+import rendersnap.star.end.client.ChunkPace;
+import rendersnap.star.end.client.Compat;
 import rendersnap.star.end.client.McCompat;
 import rendersnap.star.end.client.cfg.Opts;
 import rendersnap.star.end.client.render.Cuts;
@@ -17,7 +18,7 @@ import rendersnap.star.end.client.render.zoom.Zoom;
 
 import java.util.function.Consumer;
 
-public final class SnapPage extends OptionsSubScreen {
+public final class SnapPg extends OptionsSubScreen {
     private static final SystemToast.SystemToastId RELOAD_TOAST = new SystemToast.SystemToastId();
 
     public enum Tab {
@@ -27,7 +28,7 @@ public final class SnapPage extends OptionsSubScreen {
 
     private final Tab tab;
 
-    public SnapPage(Screen last, Minecraft mc, Options opts, Tab tab) {
+    public SnapPg(Screen last, Minecraft mc, Options opts, Tab tab) {
         super(last, opts, Component.translatable(tab == Tab.OPTIMIZATION ? "rendersnap.screen.optimization" : "rendersnap.screen.effects"));
         this.tab = tab;
     }
@@ -43,6 +44,7 @@ public final class SnapPage extends OptionsSubScreen {
 
     private void optimization() {
         this.list.addHeader(Component.translatable("rendersnap.group.culling"));
+
         this.list.addBig(bool("rendersnap.option.entities", Opts.entityCulling, on -> {
             Opts.entityCulling = on;
             Cuts.setEntityCulling(on);
@@ -61,11 +63,24 @@ public final class SnapPage extends OptionsSubScreen {
         }));
         this.list.addBig(bool("rendersnap.option.chunk_pacing", Opts.chunkPacing, on -> {
             Opts.chunkPacing = on;
-            if (on) ChunkUpdatePacing.enable(this.options);
-            else ChunkUpdatePacing.disable(this.options);
+            if (on) ChunkPace.enable(this.options);
+            else ChunkPace.disable(this.options);
             Opts.save();
         }));
         this.list.addBig(chunkWorkers());
+        this.list.addBig(bool("rendersnap.option.gentle_workers", Opts.gentleWorkers, on -> {
+            Opts.gentleWorkers = on;
+            Opts.save();
+            restartToast();
+        }));
+        this.list.addBig(bool("rendersnap.option.rebuild_guard", Opts.rebuildGuard, on -> {
+            Opts.rebuildGuard = on;
+            Opts.save();
+        }));
+        this.list.addBig(bool("rendersnap.option.light_pacing", Opts.lightPacing, on -> {
+            Opts.lightPacing = on;
+            Opts.save();
+        }));
 
         this.list.addHeader(Component.translatable("rendersnap.group.tradeoffs"));
         this.list.addBig(bool("rendersnap.option.chunk_shade_trim", Opts.chunkShadeTrim, on -> {
@@ -74,16 +89,15 @@ public final class SnapPage extends OptionsSubScreen {
             refreshChunks();
             Opts.save();
         }));
-        this.list.addBig(bool("rendersnap.option.far_layer_trim", Opts.farLayerTrim, on -> {
-            Opts.farLayerTrim = on;
-            Cuts.setFarLayerTrim(on);
-            refreshChunks();
-            Opts.save();
-        }));
         this.list.addBig(bool("rendersnap.option.fog_occlusion", Opts.fogOcclusion, on -> {
             Opts.fogOcclusion = on;
             Cuts.setFogOcclusion(on);
             refreshChunks();
+            Opts.save();
+        }));
+        this.list.addBig(bool("rendersnap.option.cave_culling", Opts.caveCulling, on -> {
+            Opts.caveCulling = on;
+            Cuts.setCaveCulling(on);
             Opts.save();
         }));
         this.list.addBig(bool("rendersnap.option.weather", Opts.hideWeather, on -> {
@@ -102,7 +116,19 @@ public final class SnapPage extends OptionsSubScreen {
             Opts.showFpsOverlay = on;
             Opts.save();
         }));
+        this.list.addBig(bool("rendersnap.option.liquid_fix", Opts.liquidFix, on -> {
+            Opts.liquidFix = on;
+            Opts.save();
+        }));
+        this.list.addBig(bool("rendersnap.option.shadow_fix", Opts.shadowFix, on -> {
+            Opts.shadowFix = on;
+            Opts.save();
+        }));
         this.list.addBig(zoomEase());
+        this.list.addBig(bool("rendersnap.option.zoom_cinematic", Opts.zoomCinematic, on -> {
+            Opts.zoomCinematic = on;
+            Opts.save();
+        }));
     }
 
     private OptionInstance<Integer> behindCam() {
@@ -173,7 +199,24 @@ public final class SnapPage extends OptionsSubScreen {
     }
 
     private static <T> OptionInstance.TooltipSupplier<T> tip(String key) {
-        String text = Component.translatable(key).getString() + "\n\n" + Compatibility.rendererStatus();
-        return OptionInstance.cachedConstantTooltip(Component.literal(text));
+        ChatFormatting color;
+        String impact;
+        if (key.contains("fps") || key.contains("zoom")) {
+            color = ChatFormatting.GREEN;
+            impact = "Low";
+        } else if (key.contains("entities") || key.contains("cave") || key.contains("chunk")) {
+            color = ChatFormatting.RED;
+            impact = "High";
+        } else {
+            color = ChatFormatting.YELLOW;
+            impact = "Medium";
+        }
+        Component text = Component.empty()
+                .append(Component.literal("Performance Impact: " + impact).withStyle(color))
+                .append(Component.literal("\n\n"))
+                .append(Component.translatable(key))
+                .append(Component.literal("\n\n"))
+                .append(Component.literal(Compat.rendererStatus()).withStyle(ChatFormatting.GRAY));
+        return OptionInstance.cachedConstantTooltip(text);
     }
 }

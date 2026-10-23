@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import rendersnap.star.end.client.McCompat;
-import rendersnap.star.end.client.menu.VideoPage;
+import rendersnap.star.end.client.menu.VideoPg;
 
 import java.util.function.Supplier;
 
@@ -36,7 +36,7 @@ public abstract class OB extends Screen {
         cir.setReturnValue(Button.builder(label, btn -> {
             Minecraft mc = this.minecraft;
             if (mc != null) {
-                McCompat.setScreen(mc, new VideoPage((Screen)(Object)this, mc, this.options));
+                McCompat.setScreen(mc, new VideoPg((Screen)(Object)this, mc, this.options));
             }
         }).build());
     }

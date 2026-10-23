@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import rendersnap.star.end.client.ChunkWorkerPool;
+import rendersnap.star.end.client.ChunkO;
 
 @Mixin(LevelRenderer.class)
 public abstract class CWLM {
@@ -20,11 +20,11 @@ public abstract class CWLM {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;backgroundExecutor()Lnet/minecraft/TracingExecutor;")
     )
     private TracingExecutor rendersnap$chunkWorkerExecutor() {
-        return ChunkWorkerPool.executor();
+        return ChunkO.executor();
     }
 
     @Inject(method = "close", at = @At("HEAD"))
     private void rendersnap$closeChunkWorkers(CallbackInfo ci) {
-        ChunkWorkerPool.close();
+        ChunkO.close();
     }
 }

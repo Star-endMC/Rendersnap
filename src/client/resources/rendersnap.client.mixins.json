@@ -4,7 +4,7 @@
   "package": "rendersnap.star.end.mixin",
   "compatibilityLevel": "JAVA_${java_version}",
   "client": [
-    "cam.PlrView",
+    "cam.PV",
     "cam.VH",
     "cam.FP",
     "ui.OB",
@@ -15,8 +15,14 @@
     "world.CS",
     "entity.MR",
     "entity.SSM",
-    "ui.Wheel",
+    "ui.WL",
     "scene.RB"
+    ,"render.LA"
+    ,"ui.ZS"
+    ,"ui.FC"
+    ,"world.LP"
+    ,"world.RCH"
+    ,"world.CCLD"
   ],
   "injectors": {
     "defaultRequire": 1

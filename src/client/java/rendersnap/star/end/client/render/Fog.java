@@ -35,4 +35,9 @@ public final class Fog {
         }
         return distance >= occlusionDistance;
     }
+
+    public static boolean isOccludingDistanceSq(double distanceSq) {
+        if (!occlusionEnabled) return false;
+        return distanceSq >= (double) occlusionDistance * occlusionDistance;
+    }
 }

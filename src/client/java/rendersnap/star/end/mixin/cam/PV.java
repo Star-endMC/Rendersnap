@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 //?} else {
 /*@Mixin(GameRenderer.class)
 *///?}
-public abstract class PlrView {
+public abstract class PV {
 
     //? if >=26.1 {
     @Inject(method = "calculateFov", at = @At("RETURN"), cancellable = true)

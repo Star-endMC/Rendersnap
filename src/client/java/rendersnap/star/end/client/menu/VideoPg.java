@@ -19,7 +19,7 @@ import rendersnap.star.end.client.McCompat;
 
 import java.util.Optional;
 
-public final class VideoPage extends OptionsSubScreen {
+public final class VideoPg extends OptionsSubScreen {
     private static final Component TITLE = Component.translatable("rendersnap.screen.video");
     private static final Component DISPLAY = Component.translatable("options.video.display.header");
     private static final Component QUALITY = Component.translatable("options.video.quality.header");
@@ -32,7 +32,7 @@ public final class VideoPage extends OptionsSubScreen {
     private final TextureFilteringMethod filter0;
     //?}
 
-    public VideoPage(Screen last, Minecraft mc, Options opts) {
+    public VideoPg(Screen last, Minecraft mc, Options opts) {
         super(last, opts, TITLE);
         this.mips0 = opts.mipmapLevels().get();
         //? if >=26.1 {
@@ -47,7 +47,7 @@ public final class VideoPage extends OptionsSubScreen {
         this.list.addHeader(DISPLAY);
         this.list.addBig(this.fullscreen());
         //? if >=26.1 {
-        this.list.addSmall(new OptionInstance[]{
+        this.list.addSmall(new OptionInstance<?>[]{
                 this.options.framerateLimit(), this.options.enableVsync(), this.options.inactivityFpsLimit(),
                 this.options.guiScale(), this.options.fullscreen(), this.options.exclusiveFullscreen(), this.options.gamma()
         });
@@ -60,7 +60,7 @@ public final class VideoPage extends OptionsSubScreen {
 
         this.list.addHeader(QUALITY);
         this.list.addBig(this.options.graphicsPreset());
-        this.list.addSmall(new OptionInstance[]{
+        this.list.addSmall(new OptionInstance<?>[]{
                 this.options.biomeBlendRadius(), this.options.renderDistance(), this.options.prioritizeChunkUpdates(),
                 this.options.simulationDistance(), this.options.ambientOcclusion(), this.options.cloudStatus(),
                 this.options.particles(), this.options.mipmapLevels(), this.options.entityShadows(),
@@ -70,19 +70,19 @@ public final class VideoPage extends OptionsSubScreen {
         });
 
         this.list.addHeader(PREFS);
-        this.list.addSmall(new OptionInstance[]{
+        this.list.addSmall(new OptionInstance<?>[]{
                 this.options.showAutosaveIndicator(), this.options.vignette(), this.options.attackIndicator(),
                 this.options.chunkSectionFadeInTime()
         });
 
         this.list.addHeader(SNAP);
         this.list.addSmall(
-                pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION),
-                pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS)
+                pageButton("rendersnap.screen.optimization", SnapPg.Tab.OPTIMIZATION),
+                pageButton("rendersnap.screen.effects", SnapPg.Tab.EFFECTS)
         );
         //?} else {
         /*this.list.addBig(this.fullscreen());
-        this.list.addSmall(new OptionInstance[]{
+        this.list.addSmall(new OptionInstance<?>[]{
                 this.options.framerateLimit(), this.options.enableVsync(), this.options.guiScale(),
                 this.options.fullscreen(), this.options.gamma()
         });
@@ -96,8 +96,8 @@ public final class VideoPage extends OptionsSubScreen {
                 this.options.showAutosaveIndicator(), this.options.attackIndicator()
         });
         this.list.addSmall(
-                pageButton("rendersnap.screen.optimization", SnapPage.Tab.OPTIMIZATION),
-                pageButton("rendersnap.screen.effects", SnapPage.Tab.EFFECTS)
+                pageButton("rendersnap.screen.optimization", SnapPg.Tab.OPTIMIZATION),
+                pageButton("rendersnap.screen.effects", SnapPg.Tab.EFFECTS)
         );
         *///?}
     }
@@ -188,10 +188,10 @@ public final class VideoPage extends OptionsSubScreen {
         );
     }
 
-    private Button pageButton(String key, SnapPage.Tab tab) {
+    private Button pageButton(String key, SnapPg.Tab tab) {
         return Button.builder(
                         Component.translatable(key),
-                        button -> open(new SnapPage(this, this.minecraft, this.options, tab))
+                        button -> open(new SnapPg(this, this.minecraft, this.options, tab))
                 )
                 .bounds(0, 0, 150, 20)
                 .build();

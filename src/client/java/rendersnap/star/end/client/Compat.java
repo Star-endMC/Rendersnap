@@ -4,12 +4,12 @@ import net.fabricmc.loader.api.FabricLoader;
 import rendersnap.star.end.Rendersnap;
 import rendersnap.star.end.client.cfg.Opts;
 
-public final class Compatibility {
+public final class Compat {
     private static boolean initialized;
     private static String renderer = "Vanilla renderer";
     private static boolean vanillaHooks = true;
 
-    private Compatibility() {
+    private Compat() {
     }
 
     public static void initialize() {
@@ -27,7 +27,7 @@ public final class Compatibility {
             vanillaHooks = false;
         }
         if (!vanillaHooks) {
-            Rendersnap.LOGGER.warn("{} detected; vanilla terrain hooks are disabled.", renderer);
+            Rendersnap.LOGGER.info("{} detected; vanilla terrain hooks are disabled.", renderer);
         }
     }
 
@@ -42,10 +42,13 @@ public final class Compatibility {
     public static boolean disableConflictingOptions() {
         if (vanillaHooks) return false;
 
-        boolean changed = Opts.farLayerTrim || Opts.fogOcclusion || Opts.behindCamMode != Opts.BEHIND_CAM_OFF;
-        Opts.farLayerTrim = false;
+        boolean changed = Opts.fogOcclusion || Opts.behindCamMode != Opts.BEHIND_CAM_OFF;
         Opts.fogOcclusion = false;
         Opts.behindCamMode = Opts.BEHIND_CAM_OFF;
         return changed;
+    }
+
+    public static String disabledFeatures() {
+        return vanillaHooks ? "none" : "terrain";
     }
 }

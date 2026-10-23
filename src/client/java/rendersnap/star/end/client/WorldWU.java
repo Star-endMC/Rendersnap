@@ -5,10 +5,10 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import rendersnap.star.end.client.cfg.Opts;
 import rendersnap.star.end.client.render.Cuts;
 
-public final class WorldWarmup {
+public final class WorldWU {
     private static ClientLevel lastLevel;
 
-    private WorldWarmup() {
+    private WorldWU() {
     }
 
     public static void tick(Minecraft mc) {

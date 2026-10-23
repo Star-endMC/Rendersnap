@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import rendersnap.star.end.client.McCompat;
+import rendersnap.star.end.client.cfg.Opts;
 
 import java.util.List;
 
@@ -15,7 +16,6 @@ public final class Zoom {
 
     private Zoom() {}
 
-    private static final int MAX_ZOOM_STEPS = 11;
     private static final Ease[] MODES = Ease.values();
 
     public static final List<Integer> EASES = List.of(0, 1, 2, 3);
@@ -29,6 +29,10 @@ public final class Zoom {
     private static double oldSens;
     private static boolean oldSmooth;
     private static boolean saved;
+
+    private static boolean held;
+    private static long lastFrameNs;
+    private static float smoothZoomFov = -1.0f;
 
     public static void registerKeybind() {
         if (key != null) {
@@ -68,18 +72,24 @@ public final class Zoom {
                 oldSens = client.options.sensitivity().get();
                 oldSmooth = client.options.smoothCamera;
                 saved = true;
+                smoothZoomFov = -1.0f;
+                lastFrameNs = System.nanoTime();
             }
-            progress = transition == 0 ? 1.0f : Math.min(1.0f, progress + 0.18f);
+            held = true;
+            if (transition == 0) progress = 1.0f;
             applyZoomControls(client);
             return;
         }
+        held = false;
         if (on) {
-            progress = transition == 0 ? 0.0f : Math.max(0.0f, progress - 0.18f);
+
+            if (transition == 0 || System.nanoTime() - lastFrameNs > 250_000_000L) progress = 0.0f;
             applyZoomControls(client);
             if (progress <= 0.0f) {
                 on = false;
                 steps = 0;
                 baseFov = -1.0f;
+                smoothZoomFov = -1.0f;
                 restoreControls(client);
             }
         }
@@ -89,6 +99,28 @@ public final class Zoom {
         return on || progress > 0.0f;
     }
 
+    public static void release(Minecraft client) {
+        if (client == null || client.options == null) return;
+        restoreControls(client);
+        on = false;
+        steps = 0;
+        progress = 0.0f;
+        baseFov = -1.0f;
+        held = false;
+        smoothZoomFov = -1.0f;
+    }
+
+    public static void beforeOptionsSave(Minecraft client) {
+        if (!saved || client == null || client.options == null) return;
+        client.options.sensitivity().set(oldSens);
+        client.options.smoothCamera = oldSmooth;
+    }
+
+    public static void afterOptionsSave(Minecraft client) {
+        if (!saved || client == null || client.options == null) return;
+        applyZoomControls(client);
+    }
+
     public static float modifyFov(float vanillaFov) {
         if (!isZooming()) {
             return vanillaFov;
@@ -96,17 +128,36 @@ public final class Zoom {
         if (baseFov < 0.0f) {
             baseFov = vanillaFov;
         }
-        float target = Math.min(vanillaFov, zoomFov());
+        long now = System.nanoTime();
+        float dt = lastFrameNs == 0L ? 0.0f : Math.min(0.1f, Math.max(0.0f, (now - lastFrameNs) / 1_000_000_000.0f));
+        lastFrameNs = now;
+        float goal = held ? 1.0f : 0.0f;
+        if (transition == 0) {
+            progress = goal;
+        } else if (progress < goal) {
+            progress = Math.min(goal, progress + dt / 0.22f);
+        } else if (progress > goal) {
+            progress = Math.max(goal, progress - dt / 0.22f);
+        }
+
+        float wanted = zoomFov();
+        if (smoothZoomFov < 0.0f) {
+            smoothZoomFov = wanted;
+        } else {
+            smoothZoomFov += (wanted - smoothZoomFov) * (1.0f - (float) Math.exp(-14.0f * dt));
+        }
+        float target = Math.min(vanillaFov, smoothZoomFov);
         float eased = ease(progress);
         return Mth.lerp(eased, vanillaFov, target);
     }
 
     public static boolean handleScroll(double amount) {
-        if (!on) {
+
+        if (!on || !held) {
             return false;
         }
         if (amount > 0.0) {
-            steps = Math.min(MAX_ZOOM_STEPS, steps + 1);
+            steps = Math.min(11, steps + 1);
             return true;
         }
         if (amount < 0.0) {
@@ -123,10 +174,14 @@ public final class Zoom {
     private static void applyZoomControls(Minecraft client) {
         float base = Math.max(1.0f, client.options.fov().get());
         float zoom = zoomFov();
-        double factor = Mth.clamp(zoom / base, 0.18f, 1.0f);
-        client.options.smoothCamera = true;
+        double factor = Mth.clamp(zoom / base, 0.05f, 1.0f);
+
+        client.options.smoothCamera = Opts.zoomCinematic || oldSmooth;
         if (saved) {
-            client.options.sensitivity().set(Math.max(0.02, oldSens * factor));
+
+            double speed = oldSens * 0.6 + 0.2;
+            double scaled = speed * Math.cbrt(factor);
+            client.options.sensitivity().set(Mth.clamp((scaled - 0.2) / 0.6, 0.0, oldSens));
         }
     }
 
@@ -139,7 +194,8 @@ public final class Zoom {
     }
 
     private static float zoomFov() {
-        return Math.max(8.0f, 30.0f - steps * 2.0f);
+
+        return Math.max(7.5f, 30.0f / (float) Math.pow(1.13f, steps));
     }
 
     private static float ease(float t) {

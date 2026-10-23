@@ -5,19 +5,21 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import rendersnap.star.end.client.cfg.Opts;
 
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 
-public final class ShadowReuse {
+public final class ShadReuse {
     private static final int MAX_ENTRIES = 256;
-    private static final Map<Integer, Entry> ENTRIES = new HashMap<>();
+    private static final Map<Integer, Entry> ENTRIES = new LinkedHashMap<>(MAX_ENTRIES, 0.75f, true);
     private static final LongAdder CHECKS = new LongAdder();
     private static final LongAdder HITS = new LongAdder();
     private static final LongAdder MISSES = new LongAdder();
+    private static final LongAdder FAST_SKIPS = new LongAdder();
 
-    private ShadowReuse() {
+    private ShadReuse() {
     }
 
     public static boolean restore(Entity e, EntityRenderState state, Level level) {
@@ -44,14 +46,23 @@ public final class ShadowReuse {
             return;
         }
 
-        if (ENTRIES.size() >= MAX_ENTRIES && !ENTRIES.containsKey(e.getId())) {
-            ENTRIES.remove(ENTRIES.keySet().iterator().next());
+        Entry entry = ENTRIES.get(e.getId());
+        if (entry == null) {
+            if (ENTRIES.size() >= MAX_ENTRIES) {
+                ENTRIES.remove(ENTRIES.keySet().iterator().next());
+            }
+            entry = new Entry();
+            ENTRIES.put(e.getId(), entry);
         }
-        ENTRIES.put(e.getId(), new Entry(e, state, level));
+        entry.set(e, state, level);
     }
 
     public static void clear() {
         ENTRIES.clear();
+    }
+
+    public static void skippedForFastCamera() {
+        FAST_SKIPS.increment();
     }
 
     public static void appendDebug(StringBuilder out) {
@@ -59,13 +70,29 @@ public final class ShadowReuse {
         out.append("shadowCacheHits=").append(HITS.sum()).append('\n');
         out.append("shadowCacheMisses=").append(MISSES.sum()).append('\n');
         out.append("shadowCacheEntries=").append(ENTRIES.size()).append('\n');
+        out.append("shadowFastCameraSkips=").append(FAST_SKIPS.sum()).append('\n');
     }
 
-    private record Entry(Level level, long gameTime, double x, double y, double z, double distanceToCameraSq,
-                         float radius, List<EntityRenderState.ShadowPiece> pieces) {
-        private Entry(Entity e, EntityRenderState state, Level level) {
-            this(level, level.getGameTime(), e.getX(), e.getY(), e.getZ(), state.distanceToCameraSq,
-                    state.shadowRadius, List.copyOf(state.shadowPieces));
+    private static final class Entry {
+        private Level level;
+        private long gameTime;
+        private double x;
+        private double y;
+        private double z;
+        private double distanceToCameraSq;
+        private float radius;
+        private final List<EntityRenderState.ShadowPiece> pieces = new ArrayList<>(4);
+
+        private void set(Entity e, EntityRenderState state, Level level) {
+            this.level = level;
+            this.gameTime = level.getGameTime();
+            this.x = e.getX();
+            this.y = e.getY();
+            this.z = e.getZ();
+            this.distanceToCameraSq = state.distanceToCameraSq;
+            this.radius = state.shadowRadius;
+            this.pieces.clear();
+            this.pieces.addAll(state.shadowPieces);
         }
 
         private boolean matches(Entity e, EntityRenderState state, Level level) {

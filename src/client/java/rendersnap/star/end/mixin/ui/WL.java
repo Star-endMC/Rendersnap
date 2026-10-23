@@ -12,14 +12,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MouseHandler.class)
-public abstract class Wheel {
+public abstract class WL {
 
     @Shadow
     @Final
     private Minecraft minecraft;
 
     @Inject(method = "onScroll", at = @At("HEAD"), cancellable = true)
-    private void zoomWheel(long handle, double xoffset, double yoffset, CallbackInfo ci) {
+    private void zoomWL(long handle, double xoffset, double yoffset, CallbackInfo ci) {
         //? if >=26.1 {
         if (handle != this.minecraft.getWindow().handle()) return;
         //?} else {

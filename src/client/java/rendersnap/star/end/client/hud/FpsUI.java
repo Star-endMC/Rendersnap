@@ -9,8 +9,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
 
-public final class FpsHud {
-    private FpsHud() {}
+public final class FpsUI {
+    private FpsUI() {}
 
     //? if >=26.1 {
     public static void draw(GuiGraphicsExtractor g, DeltaTracker tick) {

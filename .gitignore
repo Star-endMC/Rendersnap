@@ -1,9 +1,7 @@
-# Gradle
 .gradle/
 build/
 **/build/
 
-# IDE
 .idea/
 *.iml
 *.ipr
@@ -13,12 +11,10 @@ build/
 .project
 .settings/
 
-# Fabric / Stonecutter run dirs
 run/
 **/run/
 versions/*/run/
 
-# Local build artifacts
 test-jars/
 **/build/libs/
 *.jar
@@ -26,11 +22,9 @@ test-jars/
 !libs/
 !libs/**
 
-# OS
 .DS_Store
 Thumbs.db
 
-# Logs and crash dumps
 *.log
 hs_err_pid*
 replay_pid*

@@ -57,7 +57,7 @@ tasks.withType(ProcessResources).configureEach {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = javaTarget
-	it.options.compilerArgs += ['-Xlint:deprecation']
+	it.options.compilerArgs += ['-Xlint:deprecation', '-Xlint:unchecked']
 }
 
 java {

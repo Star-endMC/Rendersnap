@@ -19,7 +19,12 @@ public final class McCompat {
     }
 
     public static void setScreen(Minecraft mc, Screen screen) {
-        mc.setScreenAndShow(screen);
+
+        //? if >=26.2 {
+        mc.gui.setScreen(screen);
+        //?} else {
+        /*mc.setScreen(screen);
+        *///?}
     }
 
     public static boolean hasScreen(Minecraft mc) {
